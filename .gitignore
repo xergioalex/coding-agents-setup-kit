@@ -13,3 +13,9 @@ Thumbs.db
 # freeform scratch, and where the test sandbox lives
 tmp/*
 !tmp/.gitkeep
+
+# vendored agent skills: installed, not vendored — restore with
+#   npx --yes skills add DailybotHQ/deepworkplan-skill@v5.5.1 --skill deepworkplan --copy -y
+# (skills-lock.json pins the source and hash)
+.agents/skills/
+.claude/skills/

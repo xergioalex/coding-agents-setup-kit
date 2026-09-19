@@ -5,6 +5,8 @@ Copilot, Cline, …) working **on this repository**. To *install* the kit on a
 machine instead, use [`AGENT_BOOTSTRAP.md`](AGENT_BOOTSTRAP.md) — different job,
 different rules.
 
+DWP standard: 5.0.0 (onboarded 2026-09-18; skill 5.5.1)
+
 ## What this repo is
 
 A cross-platform kit that installs the terminal coding agents (Claude Code,
@@ -30,15 +32,35 @@ gate enforces this.
 ├── machines.example.toml       optional machine list template
 ├── tests/run.sh                the gate (sandbox HOME, no installs, no network)       → tests/README.md
 ├── docs/                       canonical guides + coding-agents/ + herdr/ + model-strategy/
-└── .claude/                    agent harness: commands, personas, settings
+├── .agents/                    canonical agent harness: agents/, commands/, skills/,
+│                               docs/ (catalog + command reference), settings.json
+└── .claude/                    thin pointers into .agents/ (this host cannot symlink)
 ```
+
+## Documentation index
+
+| Doc | What it owns |
+| --- | --- |
+| [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) | What the kit is for, in non-technical terms |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The wrapper -> lib -> CLI layering, where state lives, key decisions |
+| [`docs/STANDARDS.md`](docs/STANDARDS.md) | Coding conventions for bash, PowerShell and the Python writers |
+| [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md) | The gate, its scopes, the source-to-test mapping, blind spots |
+| [`docs/DEVELOPMENT_COMMANDS.md`](docs/DEVELOPMENT_COMMANDS.md) | Every command verbatim, including sandboxed installer runs |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Secret handling, the Cline argv exception, config-write safety |
+| [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Wrapper startup cost and the per-launch config write |
+| [`docs/WINDOWS.md`](docs/WINDOWS.md) | The `.cmd` + PowerShell layer and why it has no `exec` |
+| [`docs/machines.md`](docs/machines.md) | The machines file `agentbox` reads |
+| [`docs/DEEP_WORK_PLANS.md`](docs/DEEP_WORK_PLANS.md) | This repo's plan convention |
+| [`docs/AI_AGENT_ONBOARDING.md`](docs/AI_AGENT_ONBOARDING.md) . [`docs/AI_AGENT_COLLAB.md`](docs/AI_AGENT_COLLAB.md) | How an agent gets productive here and how agents hand off |
+| [`docs/coding-agents/`](docs/coding-agents/README.md) | One page per CLI + the provider matrix + wrapper reference |
+| [`docs/herdr/`](docs/herdr/README.md) . [`docs/model-strategy/`](docs/model-strategy/README.md) | Herdr operation . tier/model routing |
 
 ## Quick commands
 
 | Action | Command | Notes |
 | --- | --- | --- |
-| Validate everything | `tests/run.sh` | ~seconds · expect `failed: 0` |
-| Validate one area | `tests/run.sh lint\|writers\|resolver\|herdr\|machines\|onboard\|status\|win` | see `docs/TESTING_GUIDE.md` |
+| Validate everything (**full**) | `tests/run.sh` | ~seconds · expect `failed: 0` |
+| Validate one area (**scoped**) | `tests/run.sh lint\|writers\|resolver\|herdr\|machines\|onboard\|status\|win` | see `docs/TESTING_GUIDE.md` |
 | Lint only | `shellcheck -S warning install.sh lib/*.sh bin/* tests/run.sh` | needs shellcheck |
 | Doctor (read-only) | `bash bin/agentkit status` | reads PATH and config; writes nothing |
 | Try a wrapper | `bash bin/claudex --help` | works straight from the checkout |
@@ -83,13 +105,32 @@ gate enforces this.
 
 ## Structured work
 
-Long or multi-session work uses the plan convention in
-[`docs/DEEP_WORK_PLANS.md`](docs/DEEP_WORK_PLANS.md); the `.claude/commands/`
-delegators (`/dwp-create`, `/dwp-execute`, `/dwp-refine`, `/dwp-resume`,
-`/dwp-status`, `/dwp-verify`) route to it. Plans land in the gitignored `.dwp/`;
-scratch goes in `tmp/`. Ordinary direct requests are done directly and never
-silently become a plan. Every plan ends with one **Final Review**: security pass,
-full gate on the final tree, documentation reconciliation.
+Long or multi-session work runs as a **Deep Work Plan**. The flows live in the
+installed `deepworkplan` skill (`.agents/skills/deepworkplan/`, v5.5.1); the
+delegators in [`.agents/commands/`](.agents/commands/) are thin aliases that
+route to it, and never restate the flow:
+
+| Intent | Command | Sub-skill |
+| --- | --- | --- |
+| turn a goal into a plan | `/dwp-create` | `create` |
+| run it task by task | `/dwp-execute` | `execute` |
+| add, remove or reorder tasks | `/dwp-refine` | `refine` |
+| continue an interrupted plan | `/dwp-resume` | `resume` |
+| progress, read-only | `/dwp-status` | `status` |
+| conformance, read-only | `/dwp-verify` | `verify` |
+| check for a newer skill | `/dwp-upgrade` | `upgrade` |
+| evolve this repo's own kit | `/skill-create`, `/agent-create` | `author` |
+
+This repo's own plan conventions — the scopes a gate may select, the mandatory
+**Final Review** (security pass, full gate on the final tree, documentation
+reconciliation) — stay in
+[`docs/DEEP_WORK_PLANS.md`](docs/DEEP_WORK_PLANS.md); read it alongside the flow.
+Plans land in the gitignored `.dwp/plans/`; scratch goes in `tmp/`. Ordinary
+direct requests are done directly and never silently become a plan.
+
+Other agents: the sub-skills are user-invocable directly
+(`#deepworkplan-create`, or plain "run deepworkplan-create" on hosts without
+slash commands).
 
 ## Working principles
 
