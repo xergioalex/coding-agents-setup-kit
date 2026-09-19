@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tests/run.sh*)",
+      "Bash(bash tests/run.sh*)",
+      "Bash(bash -n *)",
+      "Bash(shellcheck *)",
+      "Bash(python3 -m py_compile *)",
+      "Bash(bash bin/agentkit status*)",
+      "Bash(bash bin/agentkit doctor*)",
+      "Bash(bash bin/agentbox ls*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "deny": [
+      "Bash(./install.sh*)",
+      "Bash(bash install.sh*)",
+      "Bash(pwsh*install.ps1*)",
+      "Bash(bash bin/agentkit onboard*)",
+      "Bash(bash bin/agentbox up*)",
+      "Bash(bash bin/agentbox down*)",
+      "Bash(bash bin/agentbox herdr*)",
+      "Bash(herdr server stop*)",
+      "Bash(herdr machine*)",
+      "Bash(herdr integration install*)",
+      "Read(~/.config/coding-agents-kit/env)",
+      "Read(~/.grok/auth.json)",
+      "Read(~/.codex/auth.json)",
+      "Read(~/.ssh/**)"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd opencode || exit 1
+agentkit_require_azure || exit 1
+daily="${AZURE_OPENAI_MODEL_DAILY}"
+reasoning="${AZURE_OPENAI_MODEL_REASONING:-${AZURE_OPENAI_MODEL_DAILY}}"
+default="${AZURE_OPENAI_DEFAULT_MODEL:-${daily}}"
+# Merges only provider.azure ({env:KEY}); never rewrites the user's global model.
+python3 "${_KIT_LIB}/write_opencode_provider.py" \
+  "${OPENCODE_CONFIG:-${HOME}/.config/opencode/opencode.json}" \
+  azure AZURE_OPENAI_API_KEY "$(agentkit_azure_base_url)" \
+  "${daily}" "${reasoning}"
+exec opencode --auto -m "azure/${default}" "$@"

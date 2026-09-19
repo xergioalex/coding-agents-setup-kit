@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Alias of `claude-glm`. The scheme is <cli>-<provider>, so `claude-glm` is the
+# canonical name; this exists because people type the `<cli>x` form by habit.
+set -euo pipefail
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/claude-glm" "$@"

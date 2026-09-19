@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd claude || exit 1
+case "${1:-}" in
+  -c|--continue) shift; exec claude --continue --dangerously-skip-permissions "$@" ;;
+  -r|--resume)
+    shift
+    if [[ -n "${1:-}" && "${1:0:1}" != "-" ]]; then
+      id="$1"; shift
+      exec claude --resume "$id" --dangerously-skip-permissions "$@"
+    fi
+    exec claude --resume --dangerously-skip-permissions "$@"
+    ;;
+  *) exec claude --dangerously-skip-permissions "$@" ;;
+esac

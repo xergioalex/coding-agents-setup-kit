@@ -1,0 +1,35 @@
+# coding-agents-setup-kit — optional. Copy to ~/.config/coding-agents-kit/machines.toml
+#
+# Declares the machines you run coding agents on: a docker-compose dev container,
+# a VM, a box you only reach over SSH. `agentbox` uses it to start them, reach
+# them, and keep each one's Herdr saved machine in step.
+#
+# The kit ships NO machine list. Nothing here is discovered automatically, and
+# nothing in this file is a secret: host names, ports and user names only.
+#
+# Supported keys (all optional except `name`):
+#   name     the short name you type:  agentbox up devbox
+#   ssh      the SSH alias (defaults to `name`). This is ALSO the join key with
+#            Herdr: a saved machine is matched by its `target` field.
+#   label    the label used when creating the Herdr machine (defaults to `name`)
+#   compose  path to a docker-compose file — omit for a machine you only SSH into
+#   service  the service to start inside that compose file (defaults to all)
+#   host     SSH host for the generated ssh config block (defaults to 127.0.0.1)
+#   port     published SSH port — REQUIRED for `agentbox ssh-config`
+#   user     remote user for the generated block
+
+[[machine]]
+name    = "devbox"
+ssh     = "devbox"
+label   = "Dev box"
+compose = "~/src/devbox/docker-compose.yml"
+service = "devbox"
+host    = "127.0.0.1"
+port    = 22029
+user    = "dev"
+
+[[machine]]
+name  = "buildserver"
+ssh   = "buildserver"
+label = "Build server"
+# No compose file: agentbox only reaches it over SSH and manages its Herdr machine.

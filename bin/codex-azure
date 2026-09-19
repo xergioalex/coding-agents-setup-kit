@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd codex || exit 1
+agentkit_require_azure || exit 1
+config_dir="${CODEX_HOME:-${HOME}/.codex}"
+python3 "${_KIT_LIB}/write_codex_profile.py" \
+  "${config_dir}/azure.config.toml" azure "Azure OpenAI / Microsoft Foundry" \
+  "$(agentkit_azure_base_url)" AZURE_OPENAI_API_KEY \
+  "${AZURE_OPENAI_DEFAULT_MODEL:-${AZURE_OPENAI_MODEL_DAILY}}"
+bypass=(--dangerously-bypass-approvals-and-sandbox)
+case "${1:-}" in
+  -c|--continue|-l|--last) shift; exec codex -p azure resume --last "${bypass[@]}" "$@" ;;
+  -r|--resume)
+    shift
+    if [[ -n "${1:-}" && "${1:0:1}" != "-" ]]; then
+      id="$1"; shift
+      exec codex -p azure resume "$id" "${bypass[@]}" "$@"
+    fi
+    exec codex -p azure resume --all "${bypass[@]}" "$@"
+    ;;
+  *) exec codex -p azure "${bypass[@]}" "$@" ;;
+esac

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Cursor Agent CLI with full permissions (--force: allow commands unless
+# explicitly denied; official alias --yolo). Resolves the real Cursor binary —
+# the xAI Grok CLI also installs an `agent` symlink, so `agent` alone is never
+# trusted. Set CURSORX_SANDBOX=disabled to also pass --sandbox disabled.
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+cursor_bin="$(agentkit_cursor_bin)" || {
+  agentkit_die "Cursor Agent CLI not found (looked for cursor-agent, then a non-Grok agent). Install: curl -fsSL https://cursor.com/install | bash"
+  exit 1
+}
+force=(--force)
+if [[ -n "${CURSORX_SANDBOX:-}" ]]; then
+  force+=(--sandbox "${CURSORX_SANDBOX}")
+fi
+case "${1:-}" in
+  -c|--continue) shift; exec "${cursor_bin}" --continue "${force[@]}" "$@" ;;
+  -l|--list) shift; exec "${cursor_bin}" ls "$@" ;;
+  -r|--resume)
+    shift
+    if [[ -n "${1:-}" && "${1:0:1}" != "-" ]]; then
+      id="$1"; shift
+      exec "${cursor_bin}" --resume="${id}" "${force[@]}" "$@"
+    fi
+    exec "${cursor_bin}" --resume "${force[@]}" "$@"
+    ;;
+  *) exec "${cursor_bin}" "${force[@]}" "$@" ;;
+esac

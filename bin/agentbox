@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# agentbox — the machines half of the kit: start/stop the places you run agents,
+# and keep each one's Herdr saved machine in step. Config: machines.toml.
+#
+# Sources lib/host.sh rather than lib/common.sh: common.sh exports the user's
+# env file, and a value written there must not silently change which machines
+# file this command reads.
+set -euo pipefail
+_KIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_ROOT}/lib/host.sh"
+
+py=""
+for candidate in python3 python; do
+  if command -v "${candidate}" >/dev/null 2>&1; then py="${candidate}"; break; fi
+done
+if [[ -z "${py}" ]]; then
+  printf 'agentbox: python3 is not on PATH (it runs this command and the config writers).\n' >&2
+  exit 1
+fi
+
+# Read-only verbs work anywhere; everything that drives Docker, SSH or Herdr
+# belongs to the host machine and refuses to run inside a container.
+case "${1:-}" in
+  ls|list|status|doctor|ssh-config|-h|--help|help|"") ;;
+  *) agentkit_require_host agentbox || exit 1 ;;
+esac
+
+exec "${py}" "${_KIT_ROOT}/lib/agentbox.py" "$@"

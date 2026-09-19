@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd claude || exit 1
+agentkit_require_zai || exit 1
+export ANTHROPIC_AUTH_TOKEN="${ZAI_CODING_API_KEY}"
+export ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic"
+export API_TIMEOUT_MS="${ZAI_CODING_API_TIMEOUT_MS:-3000000}"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="${ZAI_DEFAULT_OPUS_MODEL:-glm-4.6}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="${ZAI_DEFAULT_SONNET_MODEL:-glm-4.6}"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="${ZAI_DEFAULT_HAIKU_MODEL:-glm-4.5-air}"
+if [[ -n "${ZAI_CODING_AUTO_COMPACT_WINDOW:-}" ]]; then
+  export CLAUDE_CODE_AUTO_COMPACT_WINDOW="${ZAI_CODING_AUTO_COMPACT_WINDOW}"
+fi
+exec claude --dangerously-skip-permissions "$@"

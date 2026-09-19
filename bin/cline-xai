@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd cline || exit 1
+agentkit_check_cline_binary || exit 1
+agentkit_require_xai || exit 1
+model="${XAI_DEFAULT_MODEL:-${XAI_MODEL_DAILY:-grok-code-fast-1}}"
+cline auth -p openai -b "${XAI_BASE_URL:-https://api.x.ai/v1}" -k "${XAI_API_KEY}" -m "${model}" || exit 1
+exec cline --yolo -P openai -m "${model}" -k "${XAI_API_KEY}" "$@"

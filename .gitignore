@@ -1,0 +1,15 @@
+# the user's own env file, if anyone ever puts one here by mistake
+env
+.env
+
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+
+# deep work plans: working state, never deliverables
+.dwp/
+
+# freeform scratch, and where the test sandbox lives
+tmp/*
+!tmp/.gitkeep

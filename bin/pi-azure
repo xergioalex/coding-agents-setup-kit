@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd pi || exit 1
+agentkit_require_azure || exit 1
+daily="${AZURE_OPENAI_MODEL_DAILY}"
+reasoning="${AZURE_OPENAI_MODEL_REASONING:-${AZURE_OPENAI_MODEL_DAILY}}"
+default="${AZURE_OPENAI_DEFAULT_MODEL:-${daily}}"
+# Register the provider in Pi's models.json (apiKey stored as "$AZURE_OPENAI_API_KEY").
+python3 "${_KIT_LIB}/write_pi_provider.py" \
+  "${PI_MODELS_FILE:-${HOME}/.pi/agent/models.json}" \
+  azure-foundry "$(agentkit_azure_base_url)" AZURE_OPENAI_API_KEY \
+  200000 32768 true "${daily}:daily" "${reasoning}:reasoning"
+exec pi --approve --provider azure-foundry --model "${default}" --models "azure-foundry/${daily},azure-foundry/${reasoning}" "$@"

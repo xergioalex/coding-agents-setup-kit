@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd cline || exit 1
+agentkit_check_cline_binary || exit 1
+agentkit_require_azure || exit 1
+model="${AZURE_OPENAI_DEFAULT_MODEL:-${AZURE_OPENAI_MODEL_DAILY}}"
+base="$(agentkit_azure_base_url)"
+cline auth -p openai -b "${base}" -k "${AZURE_OPENAI_API_KEY}" -m "${model}" || exit 1
+exec cline --yolo -P openai -m "${model}" -k "${AZURE_OPENAI_API_KEY}" "$@"

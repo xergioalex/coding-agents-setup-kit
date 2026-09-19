@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd opencode || exit 1
+agentkit_require_zai || exit 1
+opus="${ZAI_DEFAULT_OPUS_MODEL:-glm-4.6}"
+sonnet="${ZAI_DEFAULT_SONNET_MODEL:-glm-4.6}"
+haiku="${ZAI_DEFAULT_HAIKU_MODEL:-glm-4.5-air}"
+default="${ZAI_OPENCODE_DEFAULT_MODEL:-${sonnet}}"
+# Merges only provider.zai-coding-plan ({env:KEY}); never rewrites the user's global model.
+python3 "${_KIT_LIB}/write_opencode_provider.py" \
+  "${OPENCODE_CONFIG:-${HOME}/.config/opencode/opencode.json}" \
+  zai-coding-plan ZAI_CODING_API_KEY "${ZAI_CODING_BASE_URL:-https://api.z.ai/api/coding/paas/v4}" \
+  "${sonnet}" "${opus}" "${haiku}"
+export ZHIPU_API_KEY="${ZAI_CODING_API_KEY}"
+export ZAI_API_KEY="${ZAI_CODING_API_KEY}"
+exec opencode --auto -m "zai-coding-plan/${default}" "$@"

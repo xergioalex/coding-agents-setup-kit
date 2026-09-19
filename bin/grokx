@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Official xAI Grok CLI. Auth is either `grok login` (OAuth, ~/.grok/auth.json)
+# or XAI_API_KEY from the kit env — the key is optional on the host.
+set -euo pipefail
+_KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_LIB}/common.sh"
+agentkit_require_cmd grok || exit 1
+if [[ -z "${XAI_API_KEY:-}" && ! -f "${HOME}/.grok/auth.json" ]]; then
+  agentkit_warn "no XAI_API_KEY in env and no Grok login found — run 'grok login' or set XAI_API_KEY in ${AGENTKIT_ENV:-${HOME}/.config/coding-agents-kit/env}."
+fi
+case "${1:-}" in
+  -c|--continue) shift; exec grok --continue "$@" ;;
+  -r|--resume) shift; exec grok --resume "$@" ;;
+  *) exec grok "$@" ;;
+esac

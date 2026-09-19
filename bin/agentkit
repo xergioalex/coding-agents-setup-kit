@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_KIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck disable=SC1091
+source "${_KIT_ROOT}/lib/common.sh"
+# shellcheck disable=SC1091
+source "${_KIT_ROOT}/lib/onboard.sh"
+
+usage() {
+  cat <<'EOF'
+agentkit status | doctor | onboard [area...] [--clis] | path | env-path | machines-path
+
+  status     Detect which official CLIs, wrappers, PATH and env keys exist
+             (never prints secret values). Run this first on a new machine.
+  doctor     Alias of status.
+  onboard    Run the onboarding areas: clis, machines, herdr. With no area name
+             it runs all of them; with names, only those. --clis also installs
+             missing official CLIs. Ends with what is left for you to do.
+  path       Print the kit bin directory
+  env-path   Print the env file path
+  machines-path  Print the machines file path (used by agentbox)
+EOF
+}
+
+cmd="${1:-status}"
+shift || true
+
+case "${cmd}" in
+  -h|--help|help)
+    usage
+    exit 0
+    ;;
+  path)
+    cd "$(dirname "${BASH_SOURCE[0]}")" && pwd
+    ;;
+  env-path)
+    agentkit_env_file
+    echo
+    ;;
+  machines-path)
+    agentkit_machines_file
+    echo
+    ;;
+  status|doctor)
+    # Read-only, so it still runs in a container — but what it reports is the
+    # container's PATH and config, not the host's. Say so before the report.
+    if agentkit_in_container; then
+      agentkit_warn "inside a container — this reports the container's PATH and config, not your host machine's"
+    fi
+    agentkit_status
+    agentkit_plan
+    ;;
+  onboard)
+    for arg in "$@"; do
+      case "$arg" in -h|--help) usage; exit 0 ;; esac
+    done
+    # Onboarding installs CLIs and reconciles machines that live on the host.
+    # Inside a container it would do all of that to the container.
+    agentkit_require_host agentkit || exit 1
+    agentkit_onboard "$@"
+    ;;
+  *)
+    # A mistyped verb must not look like success. Without this case the command
+    # printed nothing and exited 0, which reads exactly like "it worked".
+    printf 'agentkit: unknown command %s\n\n' "${cmd}" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
