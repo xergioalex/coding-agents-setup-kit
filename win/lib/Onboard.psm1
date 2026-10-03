@@ -1,4 +1,4 @@
-# Onboard.psm1 — detection and gap-fill on Windows. Mirrors lib/onboard.sh.
+# Onboard.psm1 - detection and gap-fill on Windows. Mirrors lib/onboard.sh.
 # Never prints a secret value; never uninstalls or moves anything.
 
 Import-Module (Join-Path $PSScriptRoot 'AgentKit.psm1') -Force -DisableNameChecking
@@ -24,9 +24,9 @@ $script:CliInstall = @{
     'codex'        = @{ Kind = 'npm';    Package = '@openai/codex'; Docs = 'https://developers.openai.com/codex/cli' }
     'cline'        = @{ Kind = 'npm';    Package = 'cline'; Docs = 'https://docs.cline.bot' }
     'pi'           = @{ Kind = 'npm';    Package = '@earendil-works/pi-coding-agent'; Extra = @('--ignore-scripts'); Docs = 'https://www.npmjs.com/package/@earendil-works/pi-coding-agent' }
-    'cursor-agent' = @{ Kind = 'manual'; Docs = 'https://cursor.com/docs/cli' }
-    'opencode'     = @{ Kind = 'manual'; Docs = 'https://opencode.ai/docs' }
-    'grok'         = @{ Kind = 'manual'; Docs = 'https://x.ai/cli' }
+    'cursor-agent' = @{ Kind = 'script'; Command = "irm 'https://cursor.com/install?win32=true' | iex"; Docs = 'https://cursor.com/docs/cli' }
+    'opencode'     = @{ Kind = 'npm';    Package = 'opencode-ai'; Docs = 'https://opencode.ai/docs' }
+    'grok'         = @{ Kind = 'script'; Command = 'irm https://x.ai/cli/install.ps1 | iex'; Docs = 'https://x.ai/cli' }
     'herdr'        = @{ Kind = 'manual'; Docs = 'https://herdr.dev/docs/install/' }
 }
 
@@ -59,7 +59,10 @@ function Show-AgentKitStatus {
 
     Write-Output ''
     Write-Output '## Prerequisites'
-    foreach ($tool in @('git', 'node', 'npm', 'python', 'docker', 'ssh', 'wsl', 'winget')) {
+    $py = Find-Python
+    if ($py) { Write-Output ("tool python: installed`t{0} {1}" -f $py.Exe, ($py.Args -join ' ')).TrimEnd() }
+    else     { Write-Output 'tool python: missing (the Microsoft Store alias does not count) - winget install Python.Python.3.12' }
+    foreach ($tool in @('git', 'node', 'npm', 'docker', 'ssh', 'wsl', 'winget')) {
         $cmd = Get-Command $tool -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($cmd) { Write-Output ("tool {0}: installed`t{1}" -f $tool, $cmd.Source) }
         else      { Write-Output ("tool {0}: missing" -f $tool) }
@@ -144,16 +147,20 @@ function Show-AgentKitPlan {
     }
     if (Test-KitOnPath) { Write-Output 'PATH: already wired' }
     else { Write-Output 'PATH: not wired; .\install.ps1 appends the kit bin dir to your USER Path' }
+}
 
-    if (-not (Test-Path -LiteralPath (Get-AgentKitEnvFile))) {
+function Show-AgentKitTodo {
+    # Env file and PATH are judged now, not when the plan was printed: by the
+    # time this runs the installer has usually just fixed both.
+    $envFile = Get-AgentKitEnvFile
+    if (-not (Test-Path -LiteralPath $envFile)) {
         Add-Todo 'no env file yet, so provider wrappers have nothing to read' 'run .\install.ps1 (it creates the file with names only)'
+    } elseif (-not (Select-String -LiteralPath $envFile -Pattern '^[A-Za-z_][A-Za-z0-9_]*=' -Quiet)) {
+        Add-Todo 'the env file has no keys yet, so the -glm/-xai/-azure wrappers will refuse to start' "edit $envFile yourself (agentkit env-path prints it); never paste a key into a chat"
     }
     if (-not (Test-KitOnPath)) {
         Add-Todo "the kit's bin directory is not on your PATH" 'run .\install.ps1, then open a new terminal'
     }
-}
-
-function Show-AgentKitTodo {
     Write-Output ''
     Write-Output '## what is left'
     if ($script:Todo.Count -eq 0) {
@@ -192,6 +199,15 @@ function Install-MissingClis {
                 } catch {
                     Write-Output "cli ${cli}: installer failed - see $($spec.Docs)"
                     Add-Todo "$cli did not install" "follow $($spec.Docs)"
+                    break
+                }
+                # A vendor script can print success after a failed download (Cursor's
+                # does), so trust only what is on PATH afterwards. Vendors edit the
+                # USER Path; pick that up for this process.
+                $env:Path = "$env:Path;$([Environment]::GetEnvironmentVariable('Path', 'User'))"
+                if (-not (Get-CliPath $cli)) {
+                    Write-Output "cli ${cli}: the installer finished but $cli is still not found - see $($spec.Docs)"
+                    Add-Todo "$cli did not install (its installer reported no error)" "re-run .\install.ps1 -Clis, or follow $($spec.Docs)"
                 }
             }
             default {
@@ -215,7 +231,16 @@ function Copy-KitFiles {
     Copy-Item -Path (Join-Path $RepoRoot 'win\bin\*.cmd') -Destination $bin -Force
     Copy-Item -Path (Join-Path $RepoRoot 'win\lib\*') -Destination $lib -Force
     Copy-Item -Path (Join-Path $RepoRoot 'lib\*.py') -Destination $lib -Force
-    Write-Output "wrappers: refreshed in $bin"
+    # Git Bash cannot run foo.cmd as `foo`, so each wrapper also gets an
+    # extensionless bash shim beside it (LF, no BOM). PowerShell and cmd.exe
+    # still pick the .cmd first.
+    $template = [System.IO.File]::ReadAllText((Join-Path $RepoRoot 'win\lib\bash-shim.sh')) -replace "`r`n", "`n"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    foreach ($cmdFile in Get-ChildItem -Path (Join-Path $RepoRoot 'win\bin\*.cmd')) {
+        $name = $cmdFile.BaseName
+        [System.IO.File]::WriteAllText((Join-Path $bin $name), $template.Replace('__NAME__', $name), $utf8NoBom)
+    }
+    Write-Output "wrappers: refreshed in $bin (.cmd for PowerShell/cmd, extensionless for Git Bash)"
 }
 
 function Set-KitPath {
