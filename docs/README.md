@@ -41,7 +41,7 @@ point for an AI agent working on the repo itself.
 | Folder | What it covers |
 | --- | --- |
 | [`coding-agents/`](coding-agents/README.md) | One page per CLI (Claude Code, Codex, Cursor Agent, OpenCode, Pi, Cline, Grok), the provider reference, and the wrapper table |
-| [`herdr/`](herdr/README.md) | Concepts, install, local use, saved SSH machines, making a container reachable, driving agents from scripts, integrations, troubleshooting |
+| [`herdr/`](herdr/README.md) | Concepts, install (incl. native Windows), local use, saved SSH machines, making a container reachable, driving agents from scripts, agents delegating to agents, integrations, troubleshooting, remote access from a phone via Tailscale or Cloudflare Tunnel + Termius |
 | [`model-strategy/`](model-strategy/README.md) | Which model and reasoning effort a task deserves, and the flag that reaches it in each CLI |
 
 ## Verification legend

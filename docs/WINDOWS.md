@@ -95,13 +95,21 @@ exists on both.
 
 ## Herdr on Windows
 
-Check <https://herdr.dev/docs/install/> for the current platform list before
-assuming anything. If there is no native Windows build, the honest setup is:
+Herdr has a **native Windows x86_64 build** (verified: herdr 0.9.1 on
+Windows 11, 2026-10-03). `.\install.ps1 -Onboard` installs it with the vendor's
+PowerShell installer when it is missing; the other install paths are in
+[`herdr/02-install-and-update.md`](herdr/02-install-and-update.md). Two other
+setups remain sensible:
 
 - run **Herdr inside WSL2** (`curl -fsSL https://herdr.dev/install.sh | sh` in
-  the distro) and use Windows Terminal as the outer terminal, or
-- run Herdr on a **remote Linux host or container** and attach to it, which is
-  what [`herdr/04-machines-and-ssh.md`](herdr/04-machines-and-ssh.md) describes.
+  the distro) when your agents and repositories live there, or
+- run Herdr on a **remote Linux host or container** and attach to it — see
+  [`herdr/04-machines-and-ssh.md`](herdr/04-machines-and-ssh.md), and for
+  reaching it from a phone [`herdr/10-tailscale-and-termius.md`](herdr/10-tailscale-and-termius.md)
+  or [`herdr/11-cloudflare-tunnel-and-termius.md`](herdr/11-cloudflare-tunnel-and-termius.md).
+
+A Windows host cannot be a **Tailscale SSH** server; use the Windows OpenSSH
+Server over the tailnet instead.
 
 One consequence worth knowing: Herdr identifies an agent by the **foreground
 process** in the pane. The Unix wrappers `exec` the real CLI, so `claudex` is

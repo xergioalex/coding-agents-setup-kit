@@ -67,7 +67,7 @@ vendors' own installers, and reports the rest with a link instead of guessing:
 | Cursor Agent | `curl -fsSL https://cursor.com/install \| bash` | `irm 'https://cursor.com/install?win32=true' \| iex` |
 | OpenCode | `curl -fsSL https://opencode.ai/install \| bash` | `npm install -g opencode-ai` |
 | xAI Grok | `curl -fsSL https://x.ai/cli/install.sh \| bash` | `irm https://x.ai/cli/install.ps1 \| iex` |
-| Herdr | `curl -fsSL https://herdr.dev/install.sh \| sh` | see <https://herdr.dev/docs/install/> |
+| Herdr | `curl -fsSL https://herdr.dev/install.sh \| sh` | `irm https://herdr.dev/install.ps1 \| iex` |
 
 Node and Python are prerequisites, not things the kit installs for you: several
 CLIs are npm packages, and the provider config writers are stdlib Python 3. The

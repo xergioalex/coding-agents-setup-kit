@@ -19,6 +19,9 @@ and documents it here, honestly, with the official page linked from every sectio
 | [`06-agent-automation.md`](06-agent-automation.md) | Driving agents from scripts or from another agent: layout, pane and agent primitives, recipes, safety rules |
 | [`07-integrations.md`](07-integrations.md) | Per-agent hooks and session restore, and how wrappers affect detection |
 | [`08-troubleshooting.md`](08-troubleshooting.md) | Symptom → cause → fix |
+| [`09-agent-to-agent.md`](09-agent-to-agent.md) | One agent delegating to, waiting for and reading back from another: the Herdr skill, the delegation loop, patterns, protocol rules, cross-machine |
+| [`10-tailscale-and-termius.md`](10-tailscale-and-termius.md) | Reaching Herdr from a laptop or phone over a tailnet: OpenSSH vs Tailscale SSH, MagicDNS, saved machines, Termius setup, security |
+| [`11-cloudflare-tunnel-and-termius.md`](11-cloudflare-tunnel-and-termius.md) | The same through a Cloudflare Tunnel: which SSH method Termius can use, Access/Gateway policies, Tailscale vs Cloudflare |
 
 Managing the machines themselves — starting the container, keeping its saved
 machine enabled — is [`../machines.md`](../machines.md) (`agentbox`).

@@ -15,9 +15,23 @@ binaries and a confusing `herdr status`.
 
 `./install.sh --clis` in this kit uses the first method when `herdr` is missing.
 
-**Windows:** check <https://herdr.dev/docs/install/> for the current platform
-list before assuming. If there is no native Windows build, run Herdr inside WSL2
-or on a remote host — see [`../WINDOWS.md`](../WINDOWS.md).
+**Windows (native, x86_64; ARM64 runs it under emulation):**
+
+| Shell | Command |
+| --- | --- |
+| PowerShell | `powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 \| iex"` |
+| `cmd.exe` (PowerShell blocked) | `curl.exe -fsSLo install.cmd https://herdr.dev/install.cmd && install.cmd && del install.cmd` |
+
+The installer uses a versioned release directory with `current` and stable
+`bin` aliases, so an update never overwrites a running binary. A manual
+download is a `.zip`: keep the extracted directory intact, do not copy only
+the `.exe`. `.\install.ps1 -Onboard` in this kit runs the PowerShell command
+when `herdr` is missing. Config and logs: `%APPDATA%\herdr\` (`herdr --help`
+prints both paths). A native build was detected and used on Windows 11
+(herdr 0.9.1, 2026-10-03); WSL2 remains a good choice when your agents live
+there — see [`../WINDOWS.md`](../WINDOWS.md). If the stable manifest has no
+Windows asset yet, the installer says so and falls back to the preview channel;
+`herdr channel show` tells you which one you got.
 
 `~/.local/bin` must be on PATH; this kit's PATH block includes it.
 
