@@ -14,8 +14,10 @@ each) without a tunnel per machine? That is **Cloudflare Mesh**:
 macOS 27 host, `cloudflared 2026.9.3` (Homebrew), Cloudflare One Client
 `warp-cli 2026.7.1376.0`, `herdr 0.9.1`, Termius and the Cloudflare One Agent
 on iOS, inside a Zero Trust organisation that **other people also use**. The
-host survived a reboot with the path intact. Section 10 (Windows and Linux
-hosts) is **unverified on host**. Dashboard menu names are the ones seen that
+host survived a reboot with the path intact. Section 11 describes the
+multi-person layout the dashboard was then moved to (shared profile, shared
+Block); onboarding a second person through it has **not** been done yet.
+Section 10 (Windows and Linux hosts) is **unverified on host**. Dashboard menu names are the ones seen that
 day; they move, so follow the linked page when they differ.
 
 Sources (read 2026-10-03):
@@ -53,6 +55,7 @@ Nothing below is anybody's real value. Replace:
 | `you@example.com` | the identity you log in to Zero Trust with |
 | `you` | your account on the host |
 | `my-tunnel` | the tunnel name |
+| `198.18.0.0/16` | the team range: every person's block lives inside it ([section 11](#11-several-people-in-one-organisation)) |
 | `198.18.22.0/24` | the address block reserved for *your* machines (section 3) |
 | `198.18.22.1` | this host's address inside that block |
 
@@ -167,8 +170,13 @@ launchctl print system/local.lo0-alias | grep -E 'runs|last exit code'   # runs 
 
 A CIDR route is **organisation-wide**, and the Default profile does not exclude
 `198.18.0.0/15`, so every enrolled device would send traffic for your block
-into Cloudflare. The **Block** policy below is what stops them; create both
-policies first.
+into Cloudflare. The shared **Block** policy below is what stops them; create
+the policies first.
+
+The design is **one Allow per person** plus **one Block for the whole team
+range**, placed under every Allow. Gateway stops at the first match: a person
+going to their own block matches their Allow; anybody going to someone else's
+block matches no Allow (it names another email) and falls into the Block.
 
 1. **Traffic controls → Traffic settings**: the proxy (*Allow Secure Web
    Gateway to proxy traffic*) must allow **TCP**. Matches on existing network
@@ -176,7 +184,7 @@ policies first.
 2. **Traffic controls → Firewall policies → Network**: note what is there. An
    organisation often has an *allow all known devices* policy; if yours sit
    below it, it matches first and yours never run.
-3. **Add a policy** — *Allow SSH to my machines*:
+3. **Add a policy** — *Allow SSH to `<person>` machines*:
 
    | Section | Selector | Operator | Value |
    | --- | --- | --- | --- |
@@ -185,17 +193,21 @@ policies first.
    | Identity | User Email | in | `you@example.com` |
    | Then | **Allow** | | |
 
-4. **Add a policy** — *Block my machines for everyone else*:
+4. **Add a policy, once for the whole team** — *Block SSH tunnel machines for
+   everyone else*:
 
    | Section | Selector | Operator | Value |
    | --- | --- | --- | --- |
-   | Traffic | Destination IP | in | `198.18.22.0/24` |
+   | Traffic | Destination IP | in | `198.18.0.0/16` |
    | Then | **Block** | | |
 
-5. Drag them to positions **1 and 2**, Allow above Block, above every existing
-   policy. Nothing else changes for anybody: both only match your block.
+5. Order: every per-person Allow first, then the shared Block, then every
+   pre-existing policy. Nothing else changes for anybody: these only match the
+   team range.
 
-Covering the whole `/24` now means adding a machine later needs no policy edit.
+Covering a whole `/24` per person means adding a machine later needs no policy
+edit; covering a `/16` with the Block means adding a person needs one new
+Allow and nothing else.
 
 ## 5. The CIDR route
 
@@ -203,13 +215,20 @@ Covering the whole `/24` now means adding a machine later needs no policy edit.
 `198.18.22.1/32`, a description, virtual network `default`. Use `/32` per host —
 each host's own tunnel carries its own address.
 
-## 6. A device profile for your devices only
+## 6. A device profile for the people who use this
+
+One profile, shared by everyone who follows this page — it only configures
+clients; access is decided by the policies of section 4, so being in the
+profile grants nothing. If it exists already, add your email to its expression
+and skip to the checks at the end of this section.
 
 **Team & Resources → Devices → Device profiles → General profiles → Create new
 profile**:
 
-- Name and description of your choice.
-- Expression: `User email` **is** `you@example.com`.
+- Name: generic, not a person (for example *SSH via tunnel users*); a
+  description saying what it is for.
+- Expression: `User email` **in** `you@example.com` — **in**, so the next
+  person is one more value in the list.
 - **Device tunnel protocol: MASQUE** (confirm the switch from WireGuard). It
   can take a while to reach devices; disconnecting and reconnecting the client
   applies it at once.
@@ -283,7 +302,7 @@ No restart: macOS starts sshd per connection. From the host itself,
 | --- | --- |
 | Termius, Cloudflare One Agent **on** | shell (or Herdr) on the host, no password asked |
 | Termius, agent **off** | timeout |
-| another user of the organisation, enrolled, to `198.18.22.1:22` | blocked by policy 2 |
+| another user of the organisation, enrolled, to `198.18.22.1:22` | blocked by the shared Block |
 | password login over SSH | `Permission denied (publickey)` |
 | host rebooted, then **logged in once** | Termius works again |
 
@@ -314,6 +333,60 @@ The policies already cover the `/24`. Per extra host:
    **native Windows** server over SSH has not been tried; Herdr inside WSL2 is
    the fallback ([`../WINDOWS.md`](../WINDOWS.md)).
 
+## 11. Several people in one organisation
+
+Each person reaches **their own** machines. Nobody gets SSH to someone else's
+machine: that would put them in another person's account, with their files and
+their full-permission agents.
+
+What is shared and what is per person:
+
+| Piece | Shared or per person | Naming |
+| --- | --- | --- |
+| Gateway TCP proxy | shared, set once | — |
+| Device profile (section 6) | **shared**: one more email per person | generic |
+| Block policy on `198.18.0.0/16` | **shared**: one for the team | generic |
+| Allow policy | **per person** | with the person's name, so it is obvious whose it is and what to delete when they leave |
+| Address block (`/24`) | **per person**, unique in the organisation | — |
+| Tunnel, loopback address, CIDR route | per machine | the machine or the person |
+| Termius key, `authorized_keys`, keys-only sshd | per person, on their own devices | — |
+
+**Keep a register of blocks.** CIDR routes share the organisation's `default`
+virtual network: two people on the same address collide. Hand out one `/24`
+each — `198.18.22.0/24`, `198.18.23.0/24`, … — and write down who has which
+in a place the team can read but that is **not** this public repository (an
+internal wiki, the admin's notes). The CIDR route descriptions in the
+dashboard are a second copy.
+
+### Onboarding the next person
+
+The admin, in the dashboard:
+
+1. Pick a free block from the register, for example `198.18.23.0/24`, and
+   record it.
+2. Add their email to the shared device profile's expression.
+3. Add their **Allow** policy (section 4, step 3, with their block and their
+   email) and drag it **above** the shared Block. Below it, the Block hides it
+   and they cannot get in.
+
+The person, on their machine and phone (sections 1, 3, 5, 7, 8):
+
+4. A tunnel on their machine (or reuse their own).
+5. Their loopback address (`198.18.23.1`) and its CIDR route (`198.18.23.1/32`).
+6. Cloudflare One Agent enrolled and reconnected (so the profile applies),
+   their Termius key in their own `authorized_keys`, keys-only sshd.
+7. The checks of section 9 — including that **they cannot** reach anybody
+   else's block, and nobody else can reach theirs.
+
+Never add someone's email to another person's Allow policy.
+
+### Offboarding
+
+Delete their Allow policy, remove their email from the profile, revoke their
+devices in Zero Trust, delete their CIDR routes (and their tunnel if it was only
+for this), and free the block in the register. The shared Block keeps
+covering the range in the meantime.
+
 ## When it does not connect
 
 Change one layer at a time: Termius → agent on? → policy → route → tunnel →
@@ -321,7 +394,7 @@ loopback address → sshd → `authorized_keys`.
 
 | Symptom | Check |
 | --- | --- |
-| Termius times out | phone agent connected and on your profile? policies 1–2 on top? CIDR route saved on the right tunnel? `route -n get 198.18.22.1` on the host says `lo0`? |
+| Termius times out | phone agent connected and on the shared profile? your Allow **above** the shared Block, both above the organisation's own policies? CIDR route saved on the right tunnel? `route -n get 198.18.22.1` on the host says `lo0`? |
 | Termius asks for a password and fails | expected after section 8 when no key is selected on the host entry |
 | a hostname route answers `REFUSED` | the DNS loop of section 2; use a CIDR route |
 | tunnel logs show `already connected to this server` | two `cloudflared` processes run the same tunnel (a system daemon and a user agent); keep one |
@@ -330,8 +403,14 @@ loopback address → sshd → `authorized_keys`.
 
 ## Security checklist
 
-- Every route sits behind the Allow/Block pair; a CIDR route without the Block
-  policy is reachable by everyone in the organisation.
+- Every route sits inside the team range covered by the shared Block, with
+  exactly one Allow above it naming its owner. A CIDR route outside that range
+  is reachable by everyone in the organisation.
+- A person on the **same LAN** can still reach sshd on the host's LAN address
+  without Cloudflare. Keys-only sshd makes that useless; restricting port 22
+  with the host firewall (`pf` on macOS) closes it too — see
+  [page 12, section 7](12-cloudflare-mesh-and-termius.md#7-close-the-lan-bypass-only-after-section-6-passes),
+  `unverified on host`.
 - sshd is key-only; Cloudflare is a gate in front of it, not a replacement.
 - One key per device and trust domain; private keys never leave the device
   that generated them. Remove old clients' keys from `authorized_keys` (and
@@ -351,8 +430,10 @@ loopback address → sshd → `authorized_keys`.
   time, **before** they press Save. Check selector names: a policy row left on
   *SNI* with an IP value silently never matches.
 - Names and descriptions typed into the dashboard are suggested in English.
-- Never edit the Default device profile or reorder other people's policies
-  beyond putting the two new ones on top. Never print the tunnel token, key
+- Never edit the Default device profile. New Allow policies go above the
+  shared Block; never move the organisation's own policies above either.
+- Onboarding someone is section 11's checklist; check the block register
+  before choosing an address. Never print the tunnel token, key
   material or the person's identity into the repository.
 
 ## Appendix: Method A — public hostname (laptops only)
