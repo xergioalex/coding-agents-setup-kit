@@ -313,6 +313,9 @@ phone to get in — inbound traffic arrives through the tunnel.
 
 ## 10. More hosts (Windows, Linux) — unverified on host
 
+A Windows host has its own step-by-step runbook, written for an agent on that
+machine: [`13-windows-host-via-cloudflare-tunnel.md`](13-windows-host-via-cloudflare-tunnel.md).
+
 The policies already cover the `/24`. Per extra host:
 
 1. Its **own tunnel**, installed as a service on that host (`cloudflared.exe

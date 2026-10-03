@@ -21,6 +21,8 @@ Where each procedure lives:
 - reaching Herdr from a phone or another network → `10-tailscale-and-termius.md`,
   `11-cloudflare-tunnel-and-termius.md` (the verified Cloudflare recipe and its
   "For an agent guiding this setup" rules), `12-cloudflare-mesh-and-termius.md`
+- adding a Windows host behind a tunnel (when you run on that Windows machine)
+  → `13-windows-host-via-cloudflare-tunnel.md`
 
 **Ask before:** `herdr server stop` or `session stop` (they end pane processes),
 replacing a running server, `machine add` / `remove`, editing `~/.ssh/config`,

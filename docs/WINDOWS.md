@@ -111,6 +111,10 @@ setups remain sensible:
 A Windows host cannot be a **Tailscale SSH** server; use the Windows OpenSSH
 Server over the tailnet instead.
 
+Making this machine reachable from a phone (Termius) or from a Herdr hub
+through a Cloudflare Tunnel is a runbook of its own, written for an agent on
+this machine: [`herdr/13-windows-host-via-cloudflare-tunnel.md`](herdr/13-windows-host-via-cloudflare-tunnel.md).
+
 One consequence worth knowing: Herdr identifies an agent by the **foreground
 process** in the pane. The Unix wrappers `exec` the real CLI, so `claudex` is
 detected as Claude Code. A Windows `.cmd` shim stays as a parent process, so

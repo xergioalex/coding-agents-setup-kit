@@ -23,6 +23,7 @@ and documents it here, honestly, with the official page linked from every sectio
 | [`10-tailscale-and-termius.md`](10-tailscale-and-termius.md) | Reaching Herdr from a laptop or phone over a tailnet: OpenSSH vs Tailscale SSH, MagicDNS, saved machines, Termius setup, security |
 | [`11-cloudflare-tunnel-and-termius.md`](11-cloudflare-tunnel-and-termius.md) | Verified recipe: phone (Termius) to a host's sshd through a Cloudflare Tunnel — CIDR route to a loopback alias, one Allow per person under a shared Block, a shared device profile, keys-only sshd, onboarding the next person of a team; why private hostname routes loop |
 | [`12-cloudflare-mesh-and-termius.md`](12-cloudflare-mesh-and-termius.md) | Alternative, unverified: a hub driving Windows and Raspberry Pi nodes over Cloudflare Mesh, Termius to all of them, closing the LAN bypass |
+| [`13-windows-host-via-cloudflare-tunnel.md`](13-windows-host-via-cloudflare-tunnel.md) | Next steps, unverified: adding a Windows machine behind its own tunnel — OpenSSH Server, admin key file and ACL, loopback adapter address, `cloudflared` service, CIDR route, keys-only, Herdr from the hub |
 
 Managing the machines themselves — starting the container, keeping its saved
 machine enabled — is [`../machines.md`](../machines.md) (`agentbox`).
