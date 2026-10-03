@@ -45,3 +45,19 @@ agentkit_require_host() {
   return 1
 }
 
+
+# Print the command that runs a working Python 3 ("python3", "python" or
+# "py -3"); return 1 when there is none. On Windows the Microsoft Store alias
+# answers `python3` but runs nothing, so a candidate counts only once it reports
+# a Python 3 version. Callers split the words: `read -ra py <<<"$(agentkit_python)"`.
+agentkit_python() {
+  local c
+  for c in python3 python; do
+    command -v "${c}" >/dev/null 2>&1 || continue
+    case "$("${c}" --version 2>&1)" in "Python 3"*) printf '%s' "${c}"; return 0 ;; esac
+  done
+  if command -v py >/dev/null 2>&1; then
+    case "$(py -3 --version 2>&1)" in "Python 3"*) printf 'py -3'; return 0 ;; esac
+  fi
+  return 1
+}

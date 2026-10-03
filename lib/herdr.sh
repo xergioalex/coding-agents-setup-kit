@@ -74,10 +74,27 @@ herdr_kit_machine_for() {
   return 0
 }
 
+# A working Python 3, resolved once. Self-contained on purpose (this file is
+# sourced alone): the Windows Microsoft Store alias answers `python3` but runs
+# nothing, so a candidate counts only once it reports a Python 3 version.
+_HERDR_KIT_PY=""
+herdr_kit_python() {
+  if [ -z "$_HERDR_KIT_PY" ]; then
+    local c
+    for c in python3 python "py -3"; do
+      # shellcheck disable=SC2086 # "py -3" is two words on purpose
+      case "$($c --version 2>&1)" in "Python 3"*) _HERDR_KIT_PY="$c"; break ;; esac
+    done
+    [ -n "$_HERDR_KIT_PY" ] || return 1
+  fi
+  # shellcheck disable=SC2086
+  $_HERDR_KIT_PY "$@"
+}
+
 # The parse itself. Reads the cached JSON; never fails.
 herdr_kit_query() {
   local target="$1"
-  printf '%s' "$_HERDR_KIT_JSON" | python3 -c '
+  printf '%s' "$_HERDR_KIT_JSON" | herdr_kit_python -c '
 import json, sys
 target = sys.argv[1]
 try:

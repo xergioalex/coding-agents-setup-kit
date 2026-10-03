@@ -10,12 +10,10 @@ _KIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck disable=SC1091
 source "${_KIT_ROOT}/lib/host.sh"
 
-py=""
-for candidate in python3 python; do
-  if command -v "${candidate}" >/dev/null 2>&1; then py="${candidate}"; break; fi
-done
-if [[ -z "${py}" ]]; then
-  printf 'agentbox: python3 is not on PATH (it runs this command and the config writers).\n' >&2
+py=()
+read -ra py <<<"$(agentkit_python)" || true
+if [[ "${#py[@]}" -eq 0 ]]; then
+  printf 'agentbox: no working Python 3 on PATH (install Python 3; on Windows the Microsoft Store alias does not count).\n' >&2
   exit 1
 fi
 
@@ -26,4 +24,4 @@ case "${1:-}" in
   *) agentkit_require_host agentbox || exit 1 ;;
 esac
 
-exec "${py}" "${_KIT_ROOT}/lib/agentbox.py" "$@"
+exec "${py[@]}" "${_KIT_ROOT}/lib/agentbox.py" "$@"

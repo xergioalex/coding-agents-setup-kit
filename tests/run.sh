@@ -20,8 +20,27 @@ check() {
   if "$@" >/dev/null 2>&1; then pass "${name}"; else fail "${name}"; fi
 }
 
+# Every `python3` below means "a working Python 3": on Windows the Microsoft
+# Store alias answers `python3` but runs nothing, and the real one may be `py -3`.
+# shellcheck source=/dev/null
+. "${ROOT}/lib/host.sh"
+KIT_PY=()
+read -ra KIT_PY <<<"$(agentkit_python)" || true
+python3() { "${KIT_PY[@]}" "$@"; }
+# Checks that run with PATH=/usr/bin:/bin still need that interpreter.
+KIT_PY_DIR="$(dirname "$(type -P "${KIT_PY[0]:-python3}" || echo /usr/bin/python3)")"
+# A Windows interpreter under `env -i` also needs these system paths (never secrets);
+# without them the `py` launcher creates %SystemDrive%/ and even Python/ in the cwd.
+KIT_WIN_ENV=()
+[[ -n "${SYSTEMROOT:-}" ]] && KIT_WIN_ENV+=("SYSTEMROOT=${SYSTEMROOT}")
+[[ -n "${LOCALAPPDATA:-}" ]] && KIT_WIN_ENV+=("LOCALAPPDATA=${LOCALAPPDATA}")
+[[ -n "${SYSTEMDRIVE:-}" ]] && KIT_WIN_ENV+=("SYSTEMDRIVE=${SYSTEMDRIVE}")
+[[ -n "${PROGRAMDATA:-}" ]] && KIT_WIN_ENV+=("PROGRAMDATA=${PROGRAMDATA}")
+
 mkdir -p "${ROOT}/tmp"
 SANDBOX="$(mktemp -d "${ROOT}/tmp/test-home.XXXXXX")"
+# Git Bash's mktemp prints C:/..., whose colon splits a PATH entry in two.
+if command -v cygpath >/dev/null 2>&1; then SANDBOX="$(cygpath -u "${SANDBOX}")"; fi
 trap 'rm -rf "${SANDBOX}"' EXIT
 
 # Runs the lint scope from / in a child process; the guard env var stops that
@@ -303,7 +322,7 @@ assert d[0]['port'] == 22029, d[0]
   fi
 
   # The Herdr half degrades: no herdr installed must not change the exit code.
-  out="$(env -i PATH=/usr/bin:/bin HOME="${SANDBOX}" AGENTKIT_MACHINES="${conf}" \
+  out="$(env -i ${KIT_WIN_ENV[@]+"${KIT_WIN_ENV[@]}"} PATH="${KIT_PY_DIR}:/usr/bin:/bin" HOME="${SANDBOX}" AGENTKIT_MACHINES="${conf}" \
         bash "${ROOT}/bin/agentbox" doctor 2>&1 || echo "EXIT-NONZERO")"
   if grep -q 'EXIT-NONZERO' <<<"${out}"; then
     fail "doctor failed when herdr was absent"
@@ -487,6 +506,38 @@ raise SystemExit(1 if bad else 0)
 PYEOF
   then pass "win/bin/*.cmd are CRLF and ASCII-only"; else fail "a .cmd shim has the wrong encoding"; fi
 
+  # Windows PowerShell 5.1 reads a BOM-less script as ANSI: the UTF-8 bytes of an
+  # em dash end in 0x94, which it reads as a closing quote, and the module fails to parse.
+  if python3 - "${ROOT}" <<'PYEOF'
+import glob, os, sys
+root = sys.argv[1]
+targets = sorted(glob.glob(os.path.join(root, "win", "lib", "*.ps*1")) + [os.path.join(root, "install.ps1")])
+bad = [os.path.relpath(p, root) for p in targets if any(b > 126 for b in open(p, "rb").read())]
+for name in bad:
+    sys.stderr.write("     %s has non-ASCII bytes\n" % name)
+raise SystemExit(1 if bad else 0)
+PYEOF
+  then pass "PowerShell sources are ASCII-only (Windows PowerShell 5.1 reads them as ANSI)"; else fail "a PowerShell source has non-ASCII bytes"; fi
+
+  # PowerShell names are case-insensitive: a script-scope `$rest = ...` in a file
+  # whose parameter is `$Rest` overwrites the arguments (agentkit once ran
+  # `status` for every verb because of exactly this).
+  if python3 - "${ROOT}" <<'PYEOF'
+import glob, os, re, sys
+root = sys.argv[1]
+bad = []
+for path in sorted(glob.glob(os.path.join(root, "win", "lib", "*.ps1"))):
+    text = open(path, encoding="ascii", errors="replace").read()
+    for m in re.finditer(r"\[string\[\]\]\$(\w+)\)", text):
+        name = m.group(1)
+        if re.search(r"(?im)^\$%s\s*=" % re.escape(name), text):
+            bad.append("%s: script-scope assignment to $%s clobbers the parameter" % (os.path.basename(path), name.lower()))
+for line in bad:
+    sys.stderr.write("     %s\n" % line)
+raise SystemExit(1 if bad else 0)
+PYEOF
+  then pass "no PowerShell entry point reassigns its own argument parameter"; else fail "a PowerShell entry point clobbers its argument parameter"; fi
+
   # Shell scripts must stay LF, or bash inside WSL or Git Bash breaks on \r.
   if python3 - "${ROOT}" <<'PYEOF'
 import glob, os, sys
@@ -502,21 +553,46 @@ raise SystemExit(1 if bad else 0)
 PYEOF
   then pass "shell scripts and lib are LF-only"; else fail "a shell script has CRLF endings"; fi
 
+  # Git Bash cannot run foo.cmd as `foo`; install.ps1 renders this template into
+  # an extensionless shim per wrapper. It must be valid bash, LF-only, and
+  # forward every name to the dispatcher.
+  local shim="${ROOT}/win/lib/bash-shim.sh"
+  check "Git Bash shim template parses" bash -n "${shim}"
+  if [[ -f "${shim}" ]] && ! grep -q $'\r' "${shim}" && grep -q '__NAME__' "${shim}" \
+     && grep -q 'bash-shim.sh' "${ROOT}/win/lib/Onboard.psm1"; then
+    pass "Git Bash shim template is LF, templated, and rendered by install.ps1"
+  else
+    fail "Git Bash shim template missing, CRLF, untemplated, or not rendered by install.ps1"
+  fi
+  out="$(sed 's/__NAME__/claudex/g' "${shim}" | grep -c 'Invoke-Wrapper.ps1" "claudex"' || true)"
+  if [[ "${out}" == "1" ]]; then pass "a rendered shim forwards its own name to Invoke-Wrapper.ps1"; else fail "rendered shim does not forward its name"; fi
+
   check "install.ps1 exists" test -f "${ROOT}/install.ps1"
   check "the Windows modules exist" test -f "${ROOT}/win/lib/AgentKit.psm1" -a -f "${ROOT}/win/lib/Onboard.psm1"
-  if command -v pwsh >/dev/null 2>&1; then
-    check "pwsh parses the Windows layer" pwsh -NoProfile -Command "
+  # pwsh anywhere; Windows PowerShell 5.1 too where it exists (Git Bash, WSL),
+  # because 5.1 is what install.ps1 runs under and it reads files differently.
+  local ps_exe ps_root
+  for ps_exe in pwsh powershell.exe; do
+    command -v "${ps_exe}" >/dev/null 2>&1 || continue
+    ps_root="${ROOT}"
+    if [[ "${ps_exe}" == powershell.exe ]]; then
+      if command -v cygpath >/dev/null 2>&1; then ps_root="$(cygpath -w "${ROOT}")"
+      elif command -v wslpath >/dev/null 2>&1; then ps_root="$(wslpath -w "${ROOT}")"
+      fi
+    fi
+    check "${ps_exe} parses the Windows layer" "${ps_exe}" -NoProfile -Command "
       \$ErrorActionPreference='Stop'
-      Get-ChildItem -Path '${ROOT}/win' -Recurse -Include *.ps1,*.psm1 | ForEach-Object {
+      Get-ChildItem -Path '${ps_root}/win' -Recurse -Include *.ps1,*.psm1 | ForEach-Object {
         \$errs = \$null
         [void][System.Management.Automation.Language.Parser]::ParseFile(\$_.FullName, [ref]\$null, [ref]\$errs)
         if (\$errs) { throw \$_.FullName }
       }
       \$errs = \$null
-      [void][System.Management.Automation.Language.Parser]::ParseFile('${ROOT}/install.ps1', [ref]\$null, [ref]\$errs)
+      [void][System.Management.Automation.Language.Parser]::ParseFile('${ps_root}/install.ps1', [ref]\$null, [ref]\$errs)
       if (\$errs) { throw 'install.ps1' }"
-  else
-    echo "  skip pwsh parse (not installed — the Windows layer is marked unverified in docs/WINDOWS.md)"
+  done
+  if ! command -v pwsh >/dev/null 2>&1 && ! command -v powershell.exe >/dev/null 2>&1; then
+    echo "  skip PowerShell parse (neither pwsh nor powershell.exe — the Windows layer is marked unverified in docs/WINDOWS.md)"
   fi
 }
 
