@@ -18,6 +18,9 @@ Where each procedure lives:
 - making a container reachable → `05-container-setup.md`
 - driving agents from scripts (check `HERDR_ENV=1` first) → `06-agent-automation.md`
 - integrations → `07-integrations.md`; the symptom table → `08-troubleshooting.md`
+- reaching Herdr from a phone or another network → `10-tailscale-and-termius.md`,
+  `11-cloudflare-tunnel-and-termius.md` (the verified Cloudflare recipe and its
+  "For an agent guiding this setup" rules), `12-cloudflare-mesh-and-termius.md`
 
 **Ask before:** `herdr server stop` or `session stop` (they end pane processes),
 replacing a running server, `machine add` / `remove`, editing `~/.ssh/config`,
