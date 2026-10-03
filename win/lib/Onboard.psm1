@@ -27,7 +27,7 @@ $script:CliInstall = @{
     'cursor-agent' = @{ Kind = 'script'; Command = "irm 'https://cursor.com/install?win32=true' | iex"; Docs = 'https://cursor.com/docs/cli' }
     'opencode'     = @{ Kind = 'npm';    Package = 'opencode-ai'; Docs = 'https://opencode.ai/docs' }
     'grok'         = @{ Kind = 'script'; Command = 'irm https://x.ai/cli/install.ps1 | iex'; Docs = 'https://x.ai/cli' }
-    'herdr'        = @{ Kind = 'manual'; Docs = 'https://herdr.dev/docs/install/' }
+    'herdr'        = @{ Kind = 'script'; Command = 'irm https://herdr.dev/install.ps1 | iex'; Docs = 'https://herdr.dev/docs/install/' }
 }
 
 function Add-Todo {
