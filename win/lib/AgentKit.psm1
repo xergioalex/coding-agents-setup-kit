@@ -1,4 +1,4 @@
-# AgentKit.psm1 — shared helpers for the Windows wrappers.
+# AgentKit.psm1 - shared helpers for the Windows wrappers.
 # Mirrors lib/common.sh. No secrets are printed, logged or written.
 
 $script:KitName = 'agentkit'
@@ -20,7 +20,7 @@ function Get-AgentKitMachinesFile {
 
 function Write-KitError {
     param([Parameter(Mandatory)][string]$Message)
-    # One line, on stderr, naming the fix — the same contract the bash side has.
+    # One line, on stderr, naming the fix - the same contract the bash side has.
     [Console]::Error.WriteLine("$($script:KitName): $Message")
 }
 
@@ -95,7 +95,7 @@ function Assert-ZaiEnv { [void](Assert-EnvVar 'ZAI_CODING_API_KEY') }
 
 <#
 .SYNOPSIS
-Resolves the real Cursor Agent CLI — never the xAI Grok CLI.
+Resolves the real Cursor Agent CLI - never the xAI Grok CLI.
 .DESCRIPTION
 Cursor installs both `agent` and `cursor-agent`; the Grok CLI also installs an
 `agent`. So a bare `agent` on PATH is never proof that Cursor is installed.
@@ -132,6 +132,13 @@ Finds a Python 3 interpreter: the config writers are stdlib Python.
 An object with .Exe and .Args, so the `py -3` launcher works like a plain path.
 #>
 function Get-Python {
+    $py = Find-Python
+    if ($py) { return $py }
+    Stop-Kit 'Python 3 is not on PATH (the provider config writers need it). winget install Python.Python.3.12'
+}
+
+# Same probe as Get-Python, but returns $null instead of stopping (for the doctor).
+function Find-Python {
     foreach ($candidate in @('python3', 'python', 'py')) {
         $cmd = Get-Command $candidate -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
         if (-not $cmd) { continue }
@@ -146,7 +153,7 @@ function Get-Python {
             return [pscustomobject]@{ Exe = $cmd.Source; Args = $pre }
         }
     }
-    Stop-Kit 'Python 3 is not on PATH (the provider config writers need it). winget install Python.Python.3.12'
+    return $null
 }
 
 function Invoke-KitWriter {
@@ -160,7 +167,7 @@ function Invoke-KitWriter {
         $path = Join-Path (Join-Path $repo 'lib') $Script
     }
     if (-not (Test-Path -LiteralPath $path)) {
-        Stop-Kit "config writer $Script not found — re-run .\install.ps1"
+        Stop-Kit "config writer $Script not found - re-run .\install.ps1"
     }
     & $py.Exe @($py.Args) $path @WriterArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -172,7 +179,7 @@ Warns when an executable still carries the browser's Mark-of-the-Web.
 .DESCRIPTION
 The Windows analogue of a broken code signature on macOS: a downloaded binary
 that Windows still considers untrusted fails in ways that look like a bug in the
-tool. Reported, never fixed silently — unblocking someone's binary is theirs to do.
+tool. Reported, never fixed silently - unblocking someone's binary is theirs to do.
 #>
 function Test-MarkOfTheWeb {
     param([Parameter(Mandatory)][string]$Path)

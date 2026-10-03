@@ -1,5 +1,5 @@
 <#
-Invoke-AgentKit.ps1 — the kit doctor on Windows: `agentkit status|doctor|onboard|path|env-path`.
+Invoke-AgentKit.ps1 - the kit doctor on Windows: `agentkit status|doctor|onboard|path|env-path`.
 
 Reports what is installed and which keys are set BY NAME. It never prints a
 value, and `status` writes nothing at all.
@@ -10,11 +10,13 @@ Import-Module (Join-Path $PSScriptRoot 'AgentKit.psm1') -Force -DisableNameCheck
 Import-Module (Join-Path $PSScriptRoot 'Onboard.psm1') -Force -DisableNameChecking
 Import-AgentKitEnv
 
-$rest = @()
-if ($Rest) { $rest = @($Rest) }
-$cmd = if ($rest.Count -gt 0) { $rest[0] } else { 'status' }
+# PowerShell variable names are case-insensitive: a local named $rest IS the
+# $Rest parameter, and resetting it would silently drop every argument.
+$argv_ = @()
+if ($Rest) { $argv_ = @($Rest) }
+$cmd = if ($argv_.Count -gt 0) { $argv_[0] } else { 'status' }
 $tail = @()
-if ($rest.Count -gt 1) { $tail = @($rest | Select-Object -Skip 1) }
+if ($argv_.Count -gt 1) { $tail = @($argv_ | Select-Object -Skip 1) }
 
 function Show-Usage {
 @'

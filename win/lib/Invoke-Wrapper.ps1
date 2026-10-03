@@ -1,5 +1,5 @@
 <#
-Invoke-Wrapper.ps1 — the Windows body of every wrapper in win/bin.
+Invoke-Wrapper.ps1 - the Windows body of every wrapper in win/bin.
 
 Each win/bin/<name>.cmd is a two-line shim that calls this file with its own
 name. One file holds the dispatch so the Windows and the Unix wrappers cannot
@@ -51,7 +51,7 @@ function Invoke-Cli {
     param([Parameter(Mandatory)][string]$Exe, [string[]]$CliArgs)
     # PowerShell has no exec(): this process stays as the parent. Herdr detects
     # the foreground process in a pane, so a wrapper used inside Herdr on Windows
-    # may need HERDR_AGENT=<kind> — see docs/herdr/06-agent-automation.md.
+    # may need HERDR_AGENT=<kind> - see docs/herdr/06-agent-automation.md.
     & $Exe @CliArgs
     exit $LASTEXITCODE
 }
@@ -250,7 +250,7 @@ switch ($Wrapper) {
         if ($Wrapper -eq 'clinex') {
             Invoke-Cli $exe (@('--yolo') + $args_)
         }
-        # Cline takes the key on argv — the one documented exception in this kit.
+        # Cline takes the key on argv - the one documented exception in this kit.
         # It can appear in the process list and in PSReadLine history.
         if ($Wrapper -eq 'cline-xai') {
             Assert-XaiEnv
@@ -273,7 +273,7 @@ switch ($Wrapper) {
     'grokx' {
         $exe = Assert-Command 'grok'
         if (-not $env:XAI_API_KEY -and -not (Test-Path -LiteralPath (Join-Path $env:USERPROFILE '.grok\auth.json'))) {
-            Write-KitError "no XAI_API_KEY in env and no Grok login found — run 'grok login' or set XAI_API_KEY in $(Get-AgentKitEnvFile)."
+            Write-KitError "no XAI_API_KEY in env and no Grok login found - run 'grok login' or set XAI_API_KEY in $(Get-AgentKitEnvFile)."
         }
         switch ($session.Kind) {
             'continue' { Invoke-Cli $exe (@('--continue') + $session.Rest) }
