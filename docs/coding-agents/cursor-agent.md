@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Install (macOS/Linux) | `curl -fsSL https://cursor.com/install \| bash` |
-| Install (Windows) | check the vendor's page — this kit has **no verified native Windows installer** for it and says so rather than guessing |
+| Install (Windows) | `irm 'https://cursor.com/install?win32=true' \| iex` — verified (Windows 11, Windows PowerShell 5.1, 2026-10-03; installed 2026.10.01). Installs to `%LOCALAPPDATA%\cursor-agent` and appends it to the user `Path`. The script prints success even when its download fails, so `.\install.ps1` checks for the binary afterwards |
 | Auth | `cursor-agent login`, or the first run |
 | Verified against | the official CLI parameters reference (<https://cursor.com/docs/cli>), 2026-09-17 — **unverified on host** |
 | Herdr | session-identity integration → `cursor-agent --resume <id>` |

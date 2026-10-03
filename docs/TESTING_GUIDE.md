@@ -24,7 +24,7 @@ installs a CLI.
 | machines | `tests/run.sh machines` | the machines file parses with its defaults, `ssh-config` renders only what is declared, an unknown name fails loudly, a bad config is refused, the Herdr half degrades, `ssh-config --write` refuses a file it did not generate, and lifecycle verbs refuse inside a container |
 | onboarding | `tests/run.sh onboard` | onboarding prints no values, never writes `~/.ssh/config`, `install.sh` creates the env file once and never overwrites it, wrappers land on disk without markdown, PATH wiring is idempotent and preserves the rc |
 | doctor | `tests/run.sh status` | keys reported by name and never by value, the OS is reported, a fresh machine is not called set up, an unknown verb exits non-zero, container refusal works, and every provider wrapper fails fast naming the missing CLI or variable |
-| Windows layer | `tests/run.sh win` | every wrapper has a `.cmd` shim and vice versa, the dispatcher handles every wrapper name, `.cmd` files are CRLF+ASCII, shell scripts are LF, and — when `pwsh` is installed — every PowerShell file parses |
+| Windows layer | `tests/run.sh win` | every wrapper has a `.cmd` shim and vice versa, the dispatcher handles every wrapper name, `.cmd` files are CRLF+ASCII, `.ps1`/`.psm1` are ASCII, no entry point reassigns its own `$Rest` parameter, shell scripts are LF, and every PowerShell file parses under `pwsh` and/or Windows PowerShell 5.1 (`powershell.exe`) when either is on PATH |
 
 ## Source → test mapping
 
@@ -56,10 +56,24 @@ herdr --version && herdr status   # Herdr client/server
 pwsh -NoProfile -File .\install.ps1 -Onboard   # the Windows path, on Windows
 ```
 
-The PowerShell layer is **parsed** by the gate only when `pwsh` is installed on
-the machine running it, and is never executed there. Anything about Windows in
-these docs that you did not verify yourself should be treated as
-`unverified on host` — and the pages say which parts those are.
+The PowerShell layer is **parsed** by the gate when `pwsh` or `powershell.exe`
+is on PATH, and is never executed there. Anything about Windows in these docs
+that you did not verify yourself should be treated as `unverified on host` —
+and the pages say which parts those are.
+
+### Running the gate on Windows (Git Bash)
+
+The gate runs under Git Bash. Three Windows facts it accounts for:
+
+- `python3` and `python` may be the Microsoft Store alias, which runs nothing;
+  the gate resolves a working interpreter with `agentkit_python` (`lib/host.sh`),
+  which also accepts `py -3`.
+- Git Bash's `mktemp` prints `C:/...`; the colon would split a `PATH` entry, so
+  the sandbox path is converted with `cygpath -u`.
+- A check run under `env -i` passes `SYSTEMROOT`, `SYSTEMDRIVE`, `PROGRAMDATA`
+  and `LOCALAPPDATA` through (system paths, never secrets). Without them the
+  Python install manager behind `py` treats the current directory as its home
+  and may install a full Python into it.
 
 ## Adding a test
 

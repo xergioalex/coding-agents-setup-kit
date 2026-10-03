@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Install (macOS/Linux) | `curl -fsSL https://opencode.ai/install \| bash` |
-| Install (Windows) | check the vendor's page — this kit has **no verified native Windows installer** for it |
+| Install (Windows) | `npm install -g opencode-ai` — verified (Windows 11, Windows PowerShell 5.1, 2026-10-03; OpenCode 1.18.34). npm's `allowScripts` policy may skip the package's `postinstall`; the CLI still ran. The vendor also documents Scoop and Chocolatey, and recommends WSL for the best experience |
 | Auth | `opencode providers` for built-in providers; custom providers live in `opencode.json` |
 | Config | `~/.config/opencode/opencode.json` (`%APPDATA%\opencode\opencode.json`) is **yours**; the kit merges one provider block. `OPENCODE_CONFIG` overrides the path |
 | Verified against | OpenCode **1.18.30** (`opencode --help`, macOS, 2026-09-17) |

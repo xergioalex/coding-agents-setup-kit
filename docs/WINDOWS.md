@@ -13,12 +13,38 @@ its own config. The kit installs into it normally. What it must not do is claim
 to report the Windows side's state — they are two machines that share a disk.
 
 > **Verification status.** The bash side of this kit is exercised by
-> `tests/run.sh` on macOS and Linux. The Windows layer is checked **statically**
-> (every wrapper has a shim, the dispatcher handles every name, encodings are
-> right) and is parsed by `pwsh` when `pwsh` is installed on the machine running
-> the gate. Nothing in `win/` has been executed on a Windows machine by the
-> author. Treat it as `unverified on host`, run `.\install.ps1 -Onboard` and
-> `agentkit status` first, and please open an issue with what you find.
+> `tests/run.sh` on macOS and Linux, and the gate also runs green under Git Bash
+> on Windows. The Windows layer is checked **statically** (every wrapper has a
+> shim, the dispatcher handles every name, encodings are right) and is parsed by
+> `pwsh` and/or Windows PowerShell 5.1 when either is on the machine running the
+> gate.
+>
+> **Executed on Windows 11 with Windows PowerShell 5.1 (2026-10-03):**
+> `.\install.ps1 -Onboard` end to end; `agentkit status`; every CLI wrapper
+> reaching its real CLI (`claudex`, `codexx`, `cursorx`, `opencodex`, `pix`,
+> `clinex`, `grokx` with `--version`); and every provider wrapper refusing with
+> its one-line `agentkit:` message when its key is unset; `agentkit
+> path|env-path|<unknown verb>` and `agentbox --help|ls`. A provider wrapper
+> **with** a key (config writer + real session) was not exercised there; treat
+> that part as `unverified on host`.
+
+## Your keys on Windows
+
+The env file lives at `%APPDATA%\coding-agents-kit\env` (`agentkit env-path`
+prints it). The installer creates it from `env.example` with every line
+commented out, locks its ACL to your user, and never overwrites it again.
+
+```powershell
+notepad (agentkit env-path)
+```
+
+Uncomment and fill only what you use — one `NAME=value` per line (quotes optional,
+no comment after the value: it would become part of it). Every wrapper reads the
+file into **its own process** at launch, so a change takes effect on the next
+launch; no new terminal is needed.
+Which variable each wrapper needs is in [`../INSTALL.md`](../INSTALL.md#your-keys);
+endpoints and model variables are in
+[`coding-agents/providers.md`](coding-agents/providers.md).
 
 ## How a Windows wrapper works
 
@@ -32,6 +58,18 @@ claudex  ->  %LOCALAPPDATA%\coding-agents-kit\bin\claudex.cmd
                       -> & claude --dangerously-skip-permissions <your args>
                       -> exit $LASTEXITCODE
 ```
+
+**Git Bash** (and other MSYS2/Cygwin shells) cannot run `claudex.cmd` by its
+bare name, so the installer also writes an extensionless bash shim per wrapper
+into the same `bin` directory, rendered from `win/lib/bash-shim.sh`. It calls the
+same PowerShell entry point with the same env file, so `claudex`, `claude-glm`,
+`agentkit` … behave identically in PowerShell, `cmd.exe` and Git Bash.
+PowerShell and `cmd.exe` keep resolving the `.cmd` first. Open a **new** Git
+Bash after installing: it builds its `PATH` from the Windows user `Path` at
+startup. Verified non-interactively (`--version`, missing-key refusal) on
+2026-10-03; a full interactive TUI session through the shim inside mintty is
+`unverified on host` — if one misbehaves, launch it from Windows Terminal or
+PowerShell instead.
 
 `Invoke-Wrapper.ps1` holds **every** wrapper's mapping in one file, so the
 Windows and Unix sides cannot drift apart; the gate asserts that each name
@@ -49,7 +87,11 @@ exists on both.
 | No `chmod` | the env file holds your keys | the ACL is reset to "this user, full control", inheritance removed; if that fails the kit tells you the `icacls` command |
 | Line endings | CRLF breaks bash inside WSL; LF breaks `cmd.exe` | `.gitattributes` pins both, and the gate fails if a `.cmd` is not CRLF or a shell script contains CR |
 | Argument quoting | `%*` in a `.cmd` is not lossless for exotic quoting | documented, not hidden: if an argument with embedded quotes misbehaves, call the CLI directly or use WSL |
-| Python | `python` may be the Microsoft Store alias stub | `Get-Python` probes `python3`, `python`, `py -3` and requires a real `Python 3` banner |
+| Python | `python` may be the Microsoft Store alias stub | `Get-Python` probes `python3`, `python`, `py -3` and requires a real `Python 3` banner; the doctor reports the interpreter it would actually use. The bash side does the same with `agentkit_python` |
+| Script encoding | Windows PowerShell 5.1 reads a BOM-less `.ps1`/`.psm1` as ANSI: the UTF-8 em dash ends in byte `0x94`, read as a closing quote, so the module fails to parse | every PowerShell source is ASCII-only; the gate checks it and parses the layer with `powershell.exe` when present |
+| Vendor installers that report success anyway | Cursor's `install.ps1` prints its success banner even when its download fails (seen with a flaky DNS resolver) | after a scripted install, `.\install.ps1` reloads the user `Path` and checks for the binary; if it is missing it says so and adds a to-do |
+| Grok's `agent.exe` | the Grok installer **prepends** `%USERPROFILE%\.grok\bin` to the user `Path`, so `agent` is Grok even after Cursor is installed | `cursorx` resolves `cursor-agent` itself and never runs Grok; `agentkit status` prints a note |
+| npm `allowScripts` | recent npm skips unapproved `postinstall` scripts (`cline`, `opencode-ai`) and warns | the CLIs still ran on the verified host; if one does not, `npm approve-scripts <pkg>` and reinstall |
 
 ## Herdr on Windows
 

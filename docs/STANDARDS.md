@@ -13,7 +13,12 @@
 - **PowerShell** (`win/lib/*.ps1`, `*.psm1`): `Set-StrictMode -Version Latest`,
   approved verbs for exported functions, `[Console]::Error.WriteLine` for the
   error contract, `exit $LASTEXITCODE` after invoking a CLI. `.cmd` shims stay
-  **CRLF and ASCII-only**; every other script stays **LF**. The gate checks both.
+  **CRLF and ASCII-only**; every other script stays **LF**. `.ps1`/`.psm1` files
+  are **ASCII-only** too: Windows PowerShell 5.1 reads a BOM-less file as ANSI,
+  and the last byte of a UTF-8 em dash (`0x94`) becomes a closing quote that
+  breaks the parse. Write `-`, not `—`. The gate checks all three. Variable
+  names are case-insensitive: never assign a script-scope `$rest` in a file
+  whose parameter is `$Rest` (it *is* the parameter); use `$argv_`.
 - **Markdown**: no YAML frontmatter (this is evergreen reference), tables for
   reference material, fenced blocks with a language.
 

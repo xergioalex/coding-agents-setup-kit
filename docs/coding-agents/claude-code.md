@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Install (macOS/Linux) | `curl -fsSL https://claude.ai/install.sh \| bash` |
-| Install (Windows) | `irm https://claude.ai/install.ps1 \| iex` — **unverified on host**; the current path is on the vendor's page |
+| Install (Windows) | `irm https://claude.ai/install.ps1 \| iex` — on the vendor's page; detected and kept on a Windows host (Windows 11, Windows PowerShell 5.1, 2026-10-03; Claude Code 2.1.288), the installer itself not re-run there |
 | Auth | run `claude` → browser login. Stored by Claude Code itself; this kit never touches it |
 | Verified against | Claude Code **2.1.273** (`claude --help`, macOS, 2026-09-17) |
 | Docs | <https://docs.claude.com/en/docs/claude-code> |

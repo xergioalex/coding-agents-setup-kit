@@ -35,7 +35,8 @@ cd coding-agents-setup-kit
 .\install.ps1 -Onboard
 ```
 
-Open a **new** terminal (the installer edits your user `Path`), then
+Open a **new** terminal — PowerShell, `cmd.exe` or Git Bash all work (the
+installer edits your user `Path`) — then
 `agentkit status`.
 
 Read [`docs/WINDOWS.md`](docs/WINDOWS.md) before you start: it explains the
@@ -59,13 +60,13 @@ vendors' own installers, and reports the rest with a link instead of guessing:
 
 | CLI | macOS / Linux | Windows |
 | --- | --- | --- |
-| Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash` | vendor PowerShell installer (unverified here) |
+| Claude Code | `curl -fsSL https://claude.ai/install.sh \| bash` | `irm https://claude.ai/install.ps1 \| iex` |
 | OpenAI Codex | `npm install -g @openai/codex` | same |
 | Cline | `npm install -g cline` | same |
 | Pi | `npm install -g --ignore-scripts @earendil-works/pi-coding-agent` | same |
-| Cursor Agent | `curl -fsSL https://cursor.com/install \| bash` | see <https://cursor.com/docs/cli> |
-| OpenCode | `curl -fsSL https://opencode.ai/install \| bash` | see <https://opencode.ai/docs> |
-| xAI Grok | `curl -fsSL https://x.ai/cli/install.sh \| bash` | see <https://x.ai/cli> |
+| Cursor Agent | `curl -fsSL https://cursor.com/install \| bash` | `irm 'https://cursor.com/install?win32=true' \| iex` |
+| OpenCode | `curl -fsSL https://opencode.ai/install \| bash` | `npm install -g opencode-ai` |
+| xAI Grok | `curl -fsSL https://x.ai/cli/install.sh \| bash` | `irm https://x.ai/cli/install.ps1 \| iex` |
 | Herdr | `curl -fsSL https://herdr.dev/install.sh \| sh` | see <https://herdr.dev/docs/install/> |
 
 Node and Python are prerequisites, not things the kit installs for you: several

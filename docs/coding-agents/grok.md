@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Install (macOS/Linux) | `curl -fsSL https://x.ai/cli/install.sh \| bash` — **not an npm package** |
-| Install (Windows) | check the vendor's page; this kit has no verified native Windows installer for it |
+| Install (Windows) | `irm https://x.ai/cli/install.ps1 \| iex` — verified (Windows 11, Windows PowerShell 5.1, 2026-10-03; grok 1.0.46). Installs `grok.exe` **and `agent.exe`** to `%USERPROFILE%\.grok\bin` and **prepends** that to the user `Path`, so `agent` resolves to Grok — see [`cursor-agent.md`](cursor-agent.md) |
 | Auth | `grok login` (OAuth) → `~/.grok/auth.json`, **or** `XAI_API_KEY` |
 | Update | `grok update [version]` |
 | Verified against | grok **1.0.30** (`grok --help`, macOS, 2026-09-17) |
