@@ -21,7 +21,7 @@ and documents it here, honestly, with the official page linked from every sectio
 | [`08-troubleshooting.md`](08-troubleshooting.md) | Symptom → cause → fix |
 | [`09-agent-to-agent.md`](09-agent-to-agent.md) | One agent delegating to, waiting for and reading back from another: the Herdr skill, the delegation loop, patterns, protocol rules, cross-machine |
 | [`10-tailscale-and-termius.md`](10-tailscale-and-termius.md) | Reaching Herdr from a laptop or phone over a tailnet: OpenSSH vs Tailscale SSH, MagicDNS, saved machines, Termius setup, security |
-| [`11-cloudflare-tunnel-and-termius.md`](11-cloudflare-tunnel-and-termius.md) | Verified recipe: phone (Termius) to a host's sshd through a Cloudflare Tunnel — CIDR route to a loopback alias, Allow/Block policies, a per-user device profile, keys-only sshd; why private hostname routes loop |
+| [`11-cloudflare-tunnel-and-termius.md`](11-cloudflare-tunnel-and-termius.md) | Verified recipe: phone (Termius) to a host's sshd through a Cloudflare Tunnel — CIDR route to a loopback alias, one Allow per person under a shared Block, a shared device profile, keys-only sshd, onboarding the next person of a team; why private hostname routes loop |
 | [`12-cloudflare-mesh-and-termius.md`](12-cloudflare-mesh-and-termius.md) | Alternative, unverified: a hub driving Windows and Raspberry Pi nodes over Cloudflare Mesh, Termius to all of them, closing the LAN bypass |
 
 Managing the machines themselves — starting the container, keeping its saved
