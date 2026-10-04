@@ -17,7 +17,9 @@ on iOS, inside a Zero Trust organisation that **other people also use**. The
 host survived a reboot with the path intact. Section 11 describes the
 multi-person layout the dashboard was then moved to (shared profile, shared
 Block); onboarding a second person through it has **not** been done yet.
-Section 10 (Windows and Linux hosts) is **unverified on host**. Dashboard menu names are the ones seen that
+Section 10: a **Windows** host was added and verified the same day, including
+the hub's Herdr attaching to Windows' native Herdr server (page 13); a Linux
+host is **unverified on host**. Dashboard menu names are the ones seen that
 day; they move, so follow the linked page when they differ.
 
 Sources (read 2026-10-03):
@@ -311,10 +313,10 @@ login screen. A host rebooted while you are away stays unreachable until then.
 The host's own Cloudflare One Client does **not** need to be connected for the
 phone to get in — inbound traffic arrives through the tunnel.
 
-## 10. More hosts (Windows, Linux) — unverified on host
+## 10. More hosts (Windows verified, Linux unverified)
 
 A Windows host has its own step-by-step runbook, written for an agent on that
-machine: [`13-windows-host-via-cloudflare-tunnel.md`](13-windows-host-via-cloudflare-tunnel.md).
+machine, verified end to end: [`13-windows-host-via-cloudflare-tunnel.md`](13-windows-host-via-cloudflare-tunnel.md).
 
 The policies already cover the `/24`. Per extra host:
 
@@ -333,8 +335,8 @@ The policies already cover the `/24`. Per extra host:
    section 6: `Host win` / `HostName 198.18.100.2` in `~/.ssh/config`, then
    `ssh win true` and `herdr --remote win` (see
    [`04-machines-and-ssh.md`](04-machines-and-ssh.md)). Herdr attaching to a
-   **native Windows** server over SSH has not been tried; Herdr inside WSL2 is
-   the fallback ([`../WINDOWS.md`](../WINDOWS.md)).
+   **native Windows** server over SSH works (herdr 0.9.1, `cmd.exe` as the SSH
+   shell — page 13); Herdr inside WSL2 is not needed for it.
 
 ## 11. Several people in one organisation
 
