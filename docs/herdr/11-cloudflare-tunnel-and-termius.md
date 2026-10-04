@@ -97,6 +97,23 @@ Two macOS hazards, both seen in practice:
   `/Library/LaunchDaemons/com.cloudflare.cloudflared.plist`. If that file
   already exists for another tunnel, **installing a second tunnel this way
   replaces the first one's service**. One service per host: reuse the tunnel.
+- **One connector per tunnel per host.** A tunnel can end up installed twice —
+  as a system daemon (`/Library/LaunchDaemons/com.cloudflare.cloudflared.plist`,
+  root) **and** as a user agent (`~/Library/LaunchAgents/com.cloudflare.cloudflared.plist`)
+  — and both run the same token. The tunnel logs then show `already connected
+  to this server`. Keep one:
+
+  | Keep | Starts | Survives logging out |
+  | --- | --- | --- |
+  | system daemon | at boot | yes |
+  | user agent | when you log in | **no** (locking the screen is fine) |
+
+  With FileVault on, both effectively start at the first login after a boot.
+  Removing a plist does not stop its process: unload it too —
+  `sudo launchctl bootout system/com.cloudflare.cloudflared` (daemon) or
+  `launchctl bootout gui/$(id -u)/com.cloudflare.cloudflared` (agent) — then
+  delete the file. Check with `pgrep -fl cloudflared` (one line) and
+  `curl -s http://127.0.0.1:20241/ready` (`"readyConnections"` above 0).
 - The token is a **command-line argument**: `ps` shows it to every local user.
   Never paste it into a chat, a log or a document; mask it as above when you
   inspect processes.
@@ -307,11 +324,35 @@ No restart: macOS starts sshd per connection. From the host itself,
 | another user of the organisation, enrolled, to `198.18.100.1:22` | blocked by the shared Block |
 | password login over SSH | `Permission denied (publickey)` |
 | host rebooted, then **logged in once** | Termius works again |
+| host screen locked for an hour | still reachable — **only if the host does not sleep** (below) |
 
 **FileVault:** after a reboot nothing runs until someone unlocks the disk at the
 login screen. A host rebooted while you are away stays unreachable until then.
 The host's own Cloudflare One Client does **not** need to be connected for the
 phone to get in — inbound traffic arrives through the tunnel.
+
+**Sleep is what cuts a laptop host, not the lock screen.** A locked screen
+changes nothing; a **sleeping** Mac takes its network down and only wakes for
+seconds at a time (`DarkWake` in `pmset -g log`), so Termius connects
+intermittently or not at all. A desktop that never sleeps does not have this
+problem. Look first:
+
+```bash
+pmset -g custom | grep -E 'Battery Power|AC Power|^ *sleep '   # minutes; 0 = never
+pmset -g log | grep -E ' (Sleep|DarkWake|Wake) ' | tail -20
+pmset -g assertions | grep -i caffeinate                        # something keeping it awake right now?
+```
+
+- On the charger, *System Settings → Battery → Options → Prevent automatic
+  sleeping on power adapter when the display is off* corresponds to `sleep 0`
+  for AC: the host stays reachable with the screen locked.
+- On battery, pick a delay: `sudo pmset -b sleep 60` (an hour idle), or
+  `sudo pmset -b sleep 0` (never; costs battery). Undo with the value you read.
+- **Closing the lid** sleeps a MacBook regardless, unless it runs in clamshell
+  mode (power plus an external display). `pmset disablesleep` overrides even
+  that; avoid it on a laptop that travels in a bag.
+- A tool can hide the problem: an active `caffeinate` (an agent session often
+  holds one) keeps the Mac awake only while it runs.
 
 ## 10. More hosts (Windows verified, Linux unverified)
 
@@ -402,7 +443,8 @@ loopback address → sshd → `authorized_keys`.
 | Termius times out | phone agent connected and on the shared profile? your Allow **above** the shared Block, both above the organisation's own policies? CIDR route saved on the right tunnel? `route -n get 198.18.100.1` on the host says `lo0`? |
 | Termius asks for a password and fails | expected after section 8 when no key is selected on the host entry |
 | a hostname route answers `REFUSED` | the DNS loop of section 2; use a CIDR route |
-| tunnel logs show `already connected to this server` | two `cloudflared` processes run the same tunnel (a system daemon and a user agent); keep one |
+| tunnel logs show `already connected to this server` | two `cloudflared` processes run the same tunnel (a system daemon and a user agent); keep one — section 1 |
+| works, then drops after the host sits idle or locked | the host **sleeps**: `pmset -g log`; on battery `sudo pmset -b sleep 60` — section 9 |
 | `Permission denied (publickey)` with the right key | the key line in `authorized_keys` is wrapped or edited; re-add it in one line |
 | works until reboot | the launchd job (`launchctl print system/local.lo0-alias`), and FileVault unlocked? |
 
