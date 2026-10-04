@@ -287,6 +287,18 @@ Herdr 0.9.1 on macOS attached to the native Windows Herdr server with
 Windows server log a saved machine shows up as clients with
 `surface_active=false` (background) plus the attached UI.
 
+### Scripts over SSH
+
+With `cmd.exe` as the SSH default shell, a PowerShell one-liner sent from the
+hub breaks on quotes and pipes (`'Select-String' is not recognized…`), and
+`powershell -EncodedCommand <base64>` hits cmd's line-length limit for longer
+scripts (`The input line is too long`). Send the script on stdin instead —
+handy for read-only inspection from the hub:
+
+```bash
+ssh win "powershell -NoProfile -Command -" < script.ps1
+```
+
 ## 10. Coming from Tailscale: remove it cleanly
 
 If the machine was reachable over Tailscale before, finish sections 1–9 first
