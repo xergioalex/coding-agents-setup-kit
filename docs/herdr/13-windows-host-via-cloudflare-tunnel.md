@@ -21,10 +21,12 @@ and the macOS hub. Verified: Termius → Windows shell through the tunnel; the
 hub's `ssh` with a dedicated key; **the hub's Herdr attaching to the native
 Windows Herdr server**, both `herdr --remote` and as a saved machine, with
 sshd's default shell left as `cmd.exe`; an unknown user refused by
-`AllowUsers`; no firewall rule needed for the tunnel. The machine had been
+`AllowUsers`; no firewall rule needed for the tunnel; **a Windows reboot**:
+sshd was listening on the tunnel address seconds after boot and the phone and
+the hub got in again without anyone touching the machine. The machine had been
 reached over Tailscale before, and that path was removed (section 10).
-**Not yet verified:** the path surviving a Windows reboot, and
-`AllowTcpForwarding no` (left at the default). Record those here when done.
+**Not yet verified:** `AllowTcpForwarding no` (left at the default). Record it
+here when done.
 
 Sources (read 2026-10-03):
 <https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse> ·
@@ -313,7 +315,7 @@ that only existed for the old path from `administrators_authorized_keys`.
 | hub `ssh nobody@win` or any user not in `AllowUsers` | refused (`Invalid user` in the sshd log) |
 | hub Herdr | **Windows** listed next to Local, its panes live |
 | `Get-NetTCPConnection -State Listen -LocalPort 22` | only `198.18.22.2` |
-| Windows rebooted and signed in | all of the above again — **not yet verified** |
+| Windows rebooted | all of the above again (verified: the sshd log shows `Server listening on 198.18.22.2` right after boot) |
 
 The sshd log is the fastest evidence (read-only):
 
