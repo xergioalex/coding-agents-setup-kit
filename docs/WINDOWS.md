@@ -113,7 +113,9 @@ Server over the tailnet instead.
 
 Making this machine reachable from a phone (Termius) or from a Herdr hub
 through a Cloudflare Tunnel is a runbook of its own, written for an agent on
-this machine: [`herdr/13-windows-host-via-cloudflare-tunnel.md`](herdr/13-windows-host-via-cloudflare-tunnel.md).
+this machine and verified end to end (2026-10-03): [`herdr/13-windows-host-via-cloudflare-tunnel.md`](herdr/13-windows-host-via-cloudflare-tunnel.md).
+A Herdr hub on macOS attaches to the **native** Windows Herdr server over SSH,
+with `cmd.exe` left as the SSH default shell; WSL is not required for that.
 
 One consequence worth knowing: Herdr identifies an agent by the **foreground
 process** in the pane. The Unix wrappers `exec` the real CLI, so `claudex` is
