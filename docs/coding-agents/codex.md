@@ -34,7 +34,7 @@ kit-owned overlay:
 
 ```toml
 # ~/.codex/glm.config.toml — generated; do not hand-edit.
-model = "glm-4.6"
+model = "glm-5.3-flash"
 model_provider = "ZAI"
 [model_providers.ZAI]
 name = "Z.AI GLM Coding Plan"

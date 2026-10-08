@@ -42,7 +42,7 @@ user runs `codex-glm -c`
        │    └─ set -a; source ~/.config/coding-agents-kit/env; set +a   (this process only)
        ├─ agentkit_require_cmd codex        → "codex is not on PATH" and exit 1
        ├─ agentkit_require_zai              → "ZAI_CODING_API_KEY is not set" and exit 1
-       ├─ python3 lib/write_codex_profile.py ~/.codex/glm.config.toml ZAI … ZAI_CODING_API_KEY glm-4.6
+       ├─ python3 lib/write_codex_profile.py ~/.codex/glm.config.toml ZAI … ZAI_CODING_API_KEY glm-5.3-flash
        └─ exec codex -p glm resume --last --dangerously-bypass-approvals-and-sandbox
 ```
 

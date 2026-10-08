@@ -13,7 +13,8 @@ Wrappers export them for their own process and fail fast with the variable
 | Variable | Default | Used by |
 | --- | --- | --- |
 | `ZAI_CODING_API_KEY` | **required** | `claude-glm`, `codex-glm`, `opencode-glm`, `pi-glm` |
-| `ZAI_DEFAULT_OPUS_MODEL` / `_SONNET_MODEL` / `_HAIKU_MODEL` | `glm-4.6` / `glm-4.6` / `glm-4.5-air` | all GLM wrappers |
+| `ZAI_DEFAULT_OPUS_MODEL` / `_SONNET_MODEL` / `_HAIKU_MODEL` | `glm-5.3` / `glm-5.3-flash` / `glm-5.3-flash` | all GLM wrappers |
+| `ZAI_DEFAULT_FABLE_MODEL` | `glm-5.3` | `claude-glm` only (remaps the `fable` alias) |
 | `ZAI_CODEX_DEFAULT_MODEL`, `ZAI_OPENCODE_DEFAULT_MODEL`, `ZAI_PI_DEFAULT_MODEL` | the sonnet value | per-CLI default |
 | `ZAI_CODING_BASE_URL` | `https://api.z.ai/api/coding/paas/v4` | OpenCode, Pi |
 | `ZAI_CODEX_BASE_URL` | `https://api.z.ai/api/v1` | Codex |

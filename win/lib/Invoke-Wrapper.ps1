@@ -82,10 +82,14 @@ switch ($Wrapper) {
         $env:ANTHROPIC_AUTH_TOKEN = $env:ZAI_CODING_API_KEY
         $env:ANTHROPIC_BASE_URL = 'https://api.z.ai/api/anthropic'
         $env:API_TIMEOUT_MS = if ($env:ZAI_CODING_API_TIMEOUT_MS) { $env:ZAI_CODING_API_TIMEOUT_MS } else { '3000000' }
-        $opus   = if ($env:ZAI_DEFAULT_OPUS_MODEL)   { $env:ZAI_DEFAULT_OPUS_MODEL }   else { 'glm-4.6' }
-        $sonnet = if ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-4.6' }
-        $haiku  = if ($env:ZAI_DEFAULT_HAIKU_MODEL)  { $env:ZAI_DEFAULT_HAIKU_MODEL }  else { 'glm-4.5-air' }
+        # Tier mapping for the current GLM Coding Plan: flagship glm-5.3 for the
+        # opus and fable aliases, glm-5.3-flash for sonnet and haiku.
+        $opus   = if ($env:ZAI_DEFAULT_OPUS_MODEL)   { $env:ZAI_DEFAULT_OPUS_MODEL }   else { 'glm-5.3' }
+        $fable  = if ($env:ZAI_DEFAULT_FABLE_MODEL)  { $env:ZAI_DEFAULT_FABLE_MODEL }  else { 'glm-5.3' }
+        $sonnet = if ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-5.3-flash' }
+        $haiku  = if ($env:ZAI_DEFAULT_HAIKU_MODEL)  { $env:ZAI_DEFAULT_HAIKU_MODEL }  else { 'glm-5.3-flash' }
         $env:ANTHROPIC_DEFAULT_OPUS_MODEL = $opus
+        $env:ANTHROPIC_DEFAULT_FABLE_MODEL = $fable
         $env:ANTHROPIC_DEFAULT_SONNET_MODEL = $sonnet
         $env:ANTHROPIC_DEFAULT_HAIKU_MODEL = $haiku
         if ($env:ZAI_CODING_AUTO_COMPACT_WINDOW) {
@@ -122,7 +126,7 @@ switch ($Wrapper) {
                 Assert-ZaiEnv
                 $base = if ($env:ZAI_CODEX_BASE_URL) { $env:ZAI_CODEX_BASE_URL } else { 'https://api.z.ai/api/v1' }
                 $model = if ($env:ZAI_CODEX_DEFAULT_MODEL) { $env:ZAI_CODEX_DEFAULT_MODEL }
-                         elseif ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-4.6' }
+                         elseif ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-5.3-flash' }
                 Invoke-KitWriter 'write_codex_profile.py' (Join-Path $codexHome 'glm.config.toml') `
                     'ZAI' 'Z.AI GLM Coding Plan' $base 'ZAI_CODING_API_KEY' $model
                 $profileArgs = @('-p', 'glm')
@@ -185,9 +189,9 @@ switch ($Wrapper) {
             'opencode-glm' {
                 Assert-ZaiEnv
                 $base = if ($env:ZAI_CODING_BASE_URL) { $env:ZAI_CODING_BASE_URL } else { 'https://api.z.ai/api/coding/paas/v4' }
-                $sonnet = if ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-4.6' }
-                $opus   = if ($env:ZAI_DEFAULT_OPUS_MODEL)   { $env:ZAI_DEFAULT_OPUS_MODEL }   else { 'glm-4.6' }
-                $haiku  = if ($env:ZAI_DEFAULT_HAIKU_MODEL)  { $env:ZAI_DEFAULT_HAIKU_MODEL }  else { 'glm-4.5-air' }
+                $sonnet = if ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-5.3-flash' }
+                $opus   = if ($env:ZAI_DEFAULT_OPUS_MODEL)   { $env:ZAI_DEFAULT_OPUS_MODEL }   else { 'glm-5.3' }
+                $haiku  = if ($env:ZAI_DEFAULT_HAIKU_MODEL)  { $env:ZAI_DEFAULT_HAIKU_MODEL }  else { 'glm-5.3-flash' }
                 $default = if ($env:ZAI_OPENCODE_DEFAULT_MODEL) { $env:ZAI_OPENCODE_DEFAULT_MODEL } else { $sonnet }
                 Invoke-KitWriter 'write_opencode_provider.py' $config 'zai-coding-plan' 'ZAI_CODING_API_KEY' $base $sonnet $opus $haiku
                 $env:ZHIPU_API_KEY = $env:ZAI_CODING_API_KEY
@@ -226,9 +230,9 @@ switch ($Wrapper) {
             'pi-glm' {
                 Assert-ZaiEnv
                 $base = if ($env:ZAI_CODING_BASE_URL) { $env:ZAI_CODING_BASE_URL } else { 'https://api.z.ai/api/coding/paas/v4' }
-                $sonnet = if ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-4.6' }
-                $opus   = if ($env:ZAI_DEFAULT_OPUS_MODEL)   { $env:ZAI_DEFAULT_OPUS_MODEL }   else { 'glm-4.6' }
-                $haiku  = if ($env:ZAI_DEFAULT_HAIKU_MODEL)  { $env:ZAI_DEFAULT_HAIKU_MODEL }  else { 'glm-4.5-air' }
+                $sonnet = if ($env:ZAI_DEFAULT_SONNET_MODEL) { $env:ZAI_DEFAULT_SONNET_MODEL } else { 'glm-5.3-flash' }
+                $opus   = if ($env:ZAI_DEFAULT_OPUS_MODEL)   { $env:ZAI_DEFAULT_OPUS_MODEL }   else { 'glm-5.3' }
+                $haiku  = if ($env:ZAI_DEFAULT_HAIKU_MODEL)  { $env:ZAI_DEFAULT_HAIKU_MODEL }  else { 'glm-5.3-flash' }
                 $default = if ($env:ZAI_PI_DEFAULT_MODEL) { $env:ZAI_PI_DEFAULT_MODEL } else { $sonnet }
                 Invoke-KitWriter 'write_pi_provider.py' $models 'zai-glm' $base 'ZAI_CODING_API_KEY' `
                     '200000' '131072' 'false' "${sonnet}:sonnet" "${opus}:opus" "${haiku}:haiku"

@@ -5,9 +5,9 @@ _KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
 source "${_KIT_LIB}/common.sh"
 agentkit_require_cmd opencode || exit 1
 agentkit_require_zai || exit 1
-opus="${ZAI_DEFAULT_OPUS_MODEL:-glm-4.6}"
-sonnet="${ZAI_DEFAULT_SONNET_MODEL:-glm-4.6}"
-haiku="${ZAI_DEFAULT_HAIKU_MODEL:-glm-4.5-air}"
+opus="${ZAI_DEFAULT_OPUS_MODEL:-glm-5.3}"
+sonnet="${ZAI_DEFAULT_SONNET_MODEL:-glm-5.3-flash}"
+haiku="${ZAI_DEFAULT_HAIKU_MODEL:-glm-5.3-flash}"
 default="${ZAI_OPENCODE_DEFAULT_MODEL:-${sonnet}}"
 # Merges only provider.zai-coding-plan ({env:KEY}); never rewrites the user's global model.
 python3 "${_KIT_LIB}/write_opencode_provider.py" \

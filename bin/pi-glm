@@ -5,9 +5,9 @@ _KIT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)"
 source "${_KIT_LIB}/common.sh"
 agentkit_require_cmd pi || exit 1
 agentkit_require_zai || exit 1
-sonnet="${ZAI_DEFAULT_SONNET_MODEL:-glm-4.6}"
-opus="${ZAI_DEFAULT_OPUS_MODEL:-glm-4.6}"
-haiku="${ZAI_DEFAULT_HAIKU_MODEL:-glm-4.5-air}"
+sonnet="${ZAI_DEFAULT_SONNET_MODEL:-glm-5.3-flash}"
+opus="${ZAI_DEFAULT_OPUS_MODEL:-glm-5.3}"
+haiku="${ZAI_DEFAULT_HAIKU_MODEL:-glm-5.3-flash}"
 default="${ZAI_PI_DEFAULT_MODEL:-${sonnet}}"
 # Register the provider in Pi's models.json (apiKey stored as "$ZAI_CODING_API_KEY").
 # Same shape as the deepworkplan-website pi-glm: 1M context, no reasoning_effort.

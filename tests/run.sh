@@ -458,6 +458,24 @@ run_status() {
       fail "${wrapper} did not fail with a named reason (got: ${out})"
     fi
   done
+
+  # The GLM tier defaults must track the current coding plan: flagship glm-5.3
+  # for the opus and fable aliases, glm-5.3-flash for sonnet and haiku.
+  # Static greps — no CLI, key or network involved.
+  if grep -Fq 'ANTHROPIC_DEFAULT_OPUS_MODEL="${ZAI_DEFAULT_OPUS_MODEL:-glm-5.3}"' "${ROOT}/bin/claude-glm" \
+     && grep -Fq 'ANTHROPIC_DEFAULT_FABLE_MODEL="${ZAI_DEFAULT_FABLE_MODEL:-glm-5.3}"' "${ROOT}/bin/claude-glm" \
+     && grep -Fq 'ANTHROPIC_DEFAULT_SONNET_MODEL="${ZAI_DEFAULT_SONNET_MODEL:-glm-5.3-flash}"' "${ROOT}/bin/claude-glm" \
+     && grep -Fq 'ANTHROPIC_DEFAULT_HAIKU_MODEL="${ZAI_DEFAULT_HAIKU_MODEL:-glm-5.3-flash}"' "${ROOT}/bin/claude-glm"; then
+    pass "claude-glm maps opus/fable to glm-5.3 and sonnet/haiku to glm-5.3-flash"
+  else
+    fail "claude-glm tier defaults drifted from the current GLM models"
+  fi
+  if grep -Eq 'glm-4\.6|glm-4\.5-air' "${ROOT}/bin/claude-glm" "${ROOT}/bin/codex-glm" \
+     "${ROOT}/bin/opencode-glm" "${ROOT}/bin/pi-glm"; then
+    fail "a GLM wrapper still defaults to a pre-5.3 model id"
+  else
+    pass "no GLM wrapper defaults to a pre-5.3 model id"
+  fi
 }
 
 run_win() {
@@ -486,6 +504,16 @@ run_win() {
     grep -q "'${name}'" "${ROOT}/win/lib/Invoke-Wrapper.ps1" || { missing=1; echo "     ${name} not handled in Invoke-Wrapper.ps1"; }
   done
   if [[ "${missing}" -eq 0 ]]; then pass "Invoke-Wrapper.ps1 handles every wrapper name"; else fail "a wrapper name is unhandled in the dispatcher"; fi
+
+  # The dispatcher must mirror bin/claude-glm's tier mapping: flagship glm-5.3
+  # for opus/fable, glm-5.3-flash for sonnet/haiku, and no retired default.
+  if grep -Fq 'ANTHROPIC_DEFAULT_FABLE_MODEL = $fable' "${ROOT}/win/lib/Invoke-Wrapper.ps1" \
+     && grep -Fq "'glm-5.3-flash'" "${ROOT}/win/lib/Invoke-Wrapper.ps1" \
+     && ! grep -Eq 'glm-4\.6|glm-4\.5-air' "${ROOT}/win/lib/Invoke-Wrapper.ps1"; then
+    pass "Invoke-Wrapper.ps1 mirrors the current GLM tier mapping"
+  else
+    fail "Invoke-Wrapper.ps1 tier mapping drifted from the current GLM models"
+  fi
 
   # Encoding is checked in Python: BSD and GNU grep disagree about bracket
   # expressions, and a grep that errors out looks exactly like a passing check.

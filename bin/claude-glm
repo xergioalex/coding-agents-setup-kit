@@ -8,9 +8,13 @@ agentkit_require_zai || exit 1
 export ANTHROPIC_AUTH_TOKEN="${ZAI_CODING_API_KEY}"
 export ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic"
 export API_TIMEOUT_MS="${ZAI_CODING_API_TIMEOUT_MS:-3000000}"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="${ZAI_DEFAULT_OPUS_MODEL:-glm-4.6}"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="${ZAI_DEFAULT_SONNET_MODEL:-glm-4.6}"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="${ZAI_DEFAULT_HAIKU_MODEL:-glm-4.5-air}"
+# Tier mapping for the current GLM Coding Plan: the flagship glm-5.3 answers
+# the opus and fable aliases, glm-5.3-flash the sonnet and haiku ones. Each
+# tier is overridable in the env file; /model shows the pinned IDs.
+export ANTHROPIC_DEFAULT_OPUS_MODEL="${ZAI_DEFAULT_OPUS_MODEL:-glm-5.3}"
+export ANTHROPIC_DEFAULT_FABLE_MODEL="${ZAI_DEFAULT_FABLE_MODEL:-glm-5.3}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="${ZAI_DEFAULT_SONNET_MODEL:-glm-5.3-flash}"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="${ZAI_DEFAULT_HAIKU_MODEL:-glm-5.3-flash}"
 if [[ -n "${ZAI_CODING_AUTO_COMPACT_WINDOW:-}" ]]; then
   export CLAUDE_CODE_AUTO_COMPACT_WINDOW="${ZAI_CODING_AUTO_COMPACT_WINDOW}"
 fi

@@ -9,7 +9,7 @@ config_dir="${CODEX_HOME:-${HOME}/.codex}"
 python3 "${_KIT_LIB}/write_codex_profile.py" \
   "${config_dir}/glm.config.toml" ZAI "Z.AI GLM Coding Plan" \
   "${ZAI_CODEX_BASE_URL:-https://api.z.ai/api/v1}" ZAI_CODING_API_KEY \
-  "${ZAI_CODEX_DEFAULT_MODEL:-${ZAI_DEFAULT_SONNET_MODEL:-glm-4.6}}"
+  "${ZAI_CODEX_DEFAULT_MODEL:-${ZAI_DEFAULT_SONNET_MODEL:-glm-5.3-flash}}"
 bypass=(--dangerously-bypass-approvals-and-sandbox)
 case "${1:-}" in
   -c|--continue|-l|--last) shift; exec codex -p glm resume --last "${bypass[@]}" "$@" ;;

@@ -39,7 +39,7 @@ What `lib/write_pi_provider.py` upserts — `apiKey` is an env **reference**:
       "apiKey": "$ZAI_CODING_API_KEY",
       "compat": { "supportsDeveloperRole": false, "supportsReasoningEffort": false },
       "models": [
-        { "id": "glm-4.6", "name": "glm-4.6 (sonnet)", "reasoning": true,
+        { "id": "glm-5.3-flash", "name": "glm-5.3-flash (sonnet)", "reasoning": true,
           "input": ["text", "image"], "contextWindow": 200000, "maxTokens": 131072 }
       ]
     }
