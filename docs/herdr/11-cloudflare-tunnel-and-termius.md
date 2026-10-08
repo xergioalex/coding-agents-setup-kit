@@ -41,9 +41,9 @@ Method B, the way it works:
 
 ```
 phone: Termius ──► Cloudflare One Agent ──► Gateway network policy ──► tunnel ──► cloudflared on the host
-       ssh you@198.18.22.1                  (only your email, port 22)                   │
+       ssh you@198.18.100.1                  (only your email, port 22)                   │
                                                                                          ▼
-                                                     198.18.22.1 = alias on the host's loopback ──► sshd ──► herdr
+                                                     198.18.100.1 = alias on the host's loopback ──► sshd ──► herdr
 ```
 
 Method A is in the [appendix](#appendix-method-a--public-hostname-laptops-only).
@@ -58,8 +58,8 @@ Nothing below is anybody's real value. Replace:
 | `you` | your account on the host |
 | `my-tunnel` | the tunnel name |
 | `198.18.0.0/16` | the team range: every person's block lives inside it ([section 11](#11-several-people-in-one-organisation)) |
-| `198.18.22.0/24` | the address block reserved for *your* machines (section 3) |
-| `198.18.22.1` | this host's address inside that block |
+| `198.18.100.0/24` | the address block reserved for *your* machines (section 3) |
+| `198.18.100.1` | this host's address inside that block |
 
 ## 0. Before you start
 
@@ -97,6 +97,23 @@ Two macOS hazards, both seen in practice:
   `/Library/LaunchDaemons/com.cloudflare.cloudflared.plist`. If that file
   already exists for another tunnel, **installing a second tunnel this way
   replaces the first one's service**. One service per host: reuse the tunnel.
+- **One connector per tunnel per host.** A tunnel can end up installed twice —
+  as a system daemon (`/Library/LaunchDaemons/com.cloudflare.cloudflared.plist`,
+  root) **and** as a user agent (`~/Library/LaunchAgents/com.cloudflare.cloudflared.plist`)
+  — and both run the same token. The tunnel logs then show `already connected
+  to this server`. Keep one:
+
+  | Keep | Starts | Survives logging out |
+  | --- | --- | --- |
+  | system daemon | at boot | yes |
+  | user agent | when you log in | **no** (locking the screen is fine) |
+
+  With FileVault on, both effectively start at the first login after a boot.
+  Removing a plist does not stop its process: unload it too —
+  `sudo launchctl bootout system/com.cloudflare.cloudflared` (daemon) or
+  `launchctl bootout gui/$(id -u)/com.cloudflare.cloudflared` (agent) — then
+  delete the file. Check with `pgrep -fl cloudflared` (one line) and
+  `curl -s http://127.0.0.1:20241/ready` (`"readyConnections"` above 0).
 - The token is a **command-line argument**: `ps` shows it to every local user.
   Never paste it into a chat, a log or a document; mask it as above when you
   inspect processes.
@@ -127,16 +144,16 @@ address on its **loopback** interface, so the address never depends on the
 Wi-Fi it is on:
 
 ```
-198.18.22.1  first host     198.18.22.2  second host     198.18.22.3  third host
+198.18.100.1  first host     198.18.100.2  second host     198.18.100.3  third host
 ```
 
 **macOS** — test first (gone on reboot):
 
 ```bash
-sudo ifconfig lo0 alias 198.18.22.1 netmask 255.255.255.255
-route -n get 198.18.22.1 | grep interface     # must say lo0, not a utun tunnel
-nc -z 198.18.22.1 22 && echo ok
-# undo: sudo ifconfig lo0 -alias 198.18.22.1
+sudo ifconfig lo0 alias 198.18.100.1 netmask 255.255.255.255
+route -n get 198.18.100.1 | grep interface     # must say lo0, not a utun tunnel
+nc -z 198.18.100.1 22 && echo ok
+# undo: sudo ifconfig lo0 -alias 198.18.100.1
 ```
 
 Then make it permanent with a launchd job, `/Library/LaunchDaemons/local.lo0-alias.plist`
@@ -152,7 +169,7 @@ Then make it permanent with a launchd job, `/Library/LaunchDaemons/local.lo0-ali
   <key>ProgramArguments</key>
   <array>
     <string>/sbin/ifconfig</string><string>lo0</string><string>alias</string>
-    <string>198.18.22.1</string><string>netmask</string><string>255.255.255.255</string>
+    <string>198.18.100.1</string><string>netmask</string><string>255.255.255.255</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -190,7 +207,7 @@ block matches no Allow (it names another email) and falls into the Block.
 
    | Section | Selector | Operator | Value |
    | --- | --- | --- | --- |
-   | Traffic | Destination IP | in | `198.18.22.0/24` |
+   | Traffic | Destination IP | in | `198.18.100.0/24` |
    | Traffic (And) | Destination Port | in | `22` |
    | Identity | User Email | in | `you@example.com` |
    | Then | **Allow** | | |
@@ -214,7 +231,7 @@ Allow and nothing else.
 ## 5. The CIDR route
 
 **Networks → Tunnels & Mesh → `my-tunnel` → CIDR routes → Add CIDR route**:
-`198.18.22.1/32`, a description, virtual network `default`. Use `/32` per host —
+`198.18.100.1/32`, a description, virtual network `default`. Use `/32` per host —
 each host's own tunnel carries its own address.
 
 ## 6. A device profile for the people who use this
@@ -270,7 +287,7 @@ warp-cli tunnel dump | grep 198.18 || echo "198.18 not excluded"
    chmod 600 ~/.ssh/authorized_keys
    ```
 
-4. **Termius → Vaults → Hosts → New Host**: address `198.18.22.1`, port `22`,
+4. **Termius → Vaults → Hosts → New Host**: address `198.18.100.1`, port `22`,
    username `you`, password empty, key = the one above. Connect; accept the host
    fingerprint once.
 5. Optional: *Startup Command* `herdr` on the host (or a snippet holding it) so
@@ -293,7 +310,7 @@ sudo sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|pu
 ```
 
 No restart: macOS starts sshd per connection. From the host itself,
-`ssh -o PubkeyAuthentication=no you@198.18.22.1` must now answer
+`ssh -o PubkeyAuthentication=no you@198.18.100.1` must now answer
 `Permission denied (publickey)` — `publickey` alone. The host's login password,
 `sudo` and the lock screen are unchanged. Losing the phone key means fixing
 `authorized_keys` at the keyboard, not being locked out.
@@ -304,14 +321,38 @@ No restart: macOS starts sshd per connection. From the host itself,
 | --- | --- |
 | Termius, Cloudflare One Agent **on** | shell (or Herdr) on the host, no password asked |
 | Termius, agent **off** | timeout |
-| another user of the organisation, enrolled, to `198.18.22.1:22` | blocked by the shared Block |
+| another user of the organisation, enrolled, to `198.18.100.1:22` | blocked by the shared Block |
 | password login over SSH | `Permission denied (publickey)` |
 | host rebooted, then **logged in once** | Termius works again |
+| host screen locked for an hour | still reachable — **only if the host does not sleep** (below) |
 
 **FileVault:** after a reboot nothing runs until someone unlocks the disk at the
 login screen. A host rebooted while you are away stays unreachable until then.
 The host's own Cloudflare One Client does **not** need to be connected for the
 phone to get in — inbound traffic arrives through the tunnel.
+
+**Sleep is what cuts a laptop host, not the lock screen.** A locked screen
+changes nothing; a **sleeping** Mac takes its network down and only wakes for
+seconds at a time (`DarkWake` in `pmset -g log`), so Termius connects
+intermittently or not at all. A desktop that never sleeps does not have this
+problem. Look first:
+
+```bash
+pmset -g custom | grep -E 'Battery Power|AC Power|^ *sleep '   # minutes; 0 = never
+pmset -g log | grep -E ' (Sleep|DarkWake|Wake) ' | tail -20
+pmset -g assertions | grep -i caffeinate                        # something keeping it awake right now?
+```
+
+- On the charger, *System Settings → Battery → Options → Prevent automatic
+  sleeping on power adapter when the display is off* corresponds to `sleep 0`
+  for AC: the host stays reachable with the screen locked.
+- On battery, pick a delay: `sudo pmset -b sleep 60` (an hour idle), or
+  `sudo pmset -b sleep 0` (never; costs battery). Undo with the value you read.
+- **Closing the lid** sleeps a MacBook regardless, unless it runs in clamshell
+  mode (power plus an external display). `pmset disablesleep` overrides even
+  that; avoid it on a laptop that travels in a bag.
+- A tool can hide the problem: an active `caffeinate` (an agent session often
+  holds one) keeps the Mac awake only while it runs.
 
 ## 10. More hosts (Windows verified, Linux unverified)
 
@@ -323,16 +364,16 @@ The policies already cover the `/24`. Per extra host:
 1. Its **own tunnel**, installed as a service on that host (`cloudflared.exe
    service install <token>` on Windows; the dashboard shows the Linux command).
    It does not need the Cloudflare One Client: it only receives.
-2. A CIDR route for its address (`198.18.22.2/32`, `198.18.22.3/32`, …).
+2. A CIDR route for its address (`198.18.100.2/32`, `198.18.100.3/32`, …).
 3. That address on the host:
-   - **Linux:** `sudo ip addr add 198.18.22.3/32 dev lo`, made persistent with
+   - **Linux:** `sudo ip addr add 198.18.100.3/32 dev lo`, made persistent with
      your network stack (systemd-networkd, netplan or a oneshot unit).
    - **Windows:** loopback does not take extra addresses directly; install the
      *Microsoft KM-TEST Loopback Adapter* and give it the address. OpenSSH
      Server and the firewall rule are in
      [`12-cloudflare-mesh-and-termius.md`](12-cloudflare-mesh-and-termius.md#3-ssh-servers-on-each-machine).
 4. The hub reaches it once its own Cloudflare One Client uses the profile from
-   section 6: `Host win` / `HostName 198.18.22.2` in `~/.ssh/config`, then
+   section 6: `Host win` / `HostName 198.18.100.2` in `~/.ssh/config`, then
    `ssh win true` and `herdr --remote win` (see
    [`04-machines-and-ssh.md`](04-machines-and-ssh.md)). Herdr attaching to a
    **native Windows** server over SSH works (herdr 0.9.1, `cmd.exe` as the SSH
@@ -358,7 +399,7 @@ What is shared and what is per person:
 
 **Keep a register of blocks.** CIDR routes share the organisation's `default`
 virtual network: two people on the same address collide. Hand out one `/24`
-each — `198.18.22.0/24`, `198.18.23.0/24`, … — and write down who has which
+each — `198.18.100.0/24`, `198.18.101.0/24`, … — and write down who has which
 in a place the team can read but that is **not** this public repository (an
 internal wiki, the admin's notes). The CIDR route descriptions in the
 dashboard are a second copy.
@@ -367,7 +408,7 @@ dashboard are a second copy.
 
 The admin, in the dashboard:
 
-1. Pick a free block from the register, for example `198.18.23.0/24`, and
+1. Pick a free block from the register, for example `198.18.101.0/24`, and
    record it.
 2. Add their email to the shared device profile's expression.
 3. Add their **Allow** policy (section 4, step 3, with their block and their
@@ -377,7 +418,7 @@ The admin, in the dashboard:
 The person, on their machine and phone (sections 1, 3, 5, 7, 8):
 
 4. A tunnel on their machine (or reuse their own).
-5. Their loopback address (`198.18.23.1`) and its CIDR route (`198.18.23.1/32`).
+5. Their loopback address (`198.18.101.1`) and its CIDR route (`198.18.101.1/32`).
 6. Cloudflare One Agent enrolled and reconnected (so the profile applies),
    their Termius key in their own `authorized_keys`, keys-only sshd.
 7. The checks of section 9 — including that **they cannot** reach anybody
@@ -399,10 +440,11 @@ loopback address → sshd → `authorized_keys`.
 
 | Symptom | Check |
 | --- | --- |
-| Termius times out | phone agent connected and on the shared profile? your Allow **above** the shared Block, both above the organisation's own policies? CIDR route saved on the right tunnel? `route -n get 198.18.22.1` on the host says `lo0`? |
+| Termius times out | phone agent connected and on the shared profile? your Allow **above** the shared Block, both above the organisation's own policies? CIDR route saved on the right tunnel? `route -n get 198.18.100.1` on the host says `lo0`? |
 | Termius asks for a password and fails | expected after section 8 when no key is selected on the host entry |
 | a hostname route answers `REFUSED` | the DNS loop of section 2; use a CIDR route |
-| tunnel logs show `already connected to this server` | two `cloudflared` processes run the same tunnel (a system daemon and a user agent); keep one |
+| tunnel logs show `already connected to this server` | two `cloudflared` processes run the same tunnel (a system daemon and a user agent); keep one — section 1 |
+| works, then drops after the host sits idle or locked | the host **sleeps**: `pmset -g log`; on battery `sudo pmset -b sleep 60` — section 9 |
 | `Permission denied (publickey)` with the right key | the key line in `authorized_keys` is wrapped or edited; re-add it in one line |
 | works until reboot | the launchd job (`launchctl print system/local.lo0-alias`), and FileVault unlocked? |
 

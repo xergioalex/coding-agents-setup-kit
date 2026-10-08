@@ -16,7 +16,7 @@ HERDR_LOG=herdr=debug herdr    # more detail while you reproduce it
 | A keybinding does nothing | the OS or the outer terminal consumed the chord | pick another binding, or free the chord in your terminal |
 | Keys fire twice | an old terminal emulator | update the outer terminal |
 | Remote attach cannot authenticate | plain SSH fails, or a passphrase prompt cannot be shown | make `ssh <alias>` work first; `ssh-add`; then `herdr --remote <alias>` |
-| Saved machine stuck in **Attention** | host key, MFA, an install or an incompatible server needs a foreground answer | run the command Herdr prints (usually `herdr --remote <target>`), then restart the client |
+| Saved machine stuck in **Attention** | host key, MFA, an install or an incompatible server needs a foreground answer | run the command Herdr prints (usually `herdr --remote <target>`), then restart the client. It also happens once after the **remote host restarts**: its Herdr server starts fresh and needs `herdr --remote <target> --session <name>` approved in a terminal |
 | Machine shows `reconnecting` | **almost always the box is down**, not a Herdr bug | `agentbox status <name>`, then `agentbox up <name>` |
 | Machine never enables, and nothing else is wrong | its `target` does not match your SSH alias | `agentbox doctor`; a target cannot be renamed — remove and re-add |
 | `ssh <alias>` says `Connection closed` although the container is healthy | something else owns that loopback port (often an IDE's remote-containers forwarder) | find the owner (`lsof -nP -iTCP:<port> -sTCP:LISTEN` / `Get-NetTCPConnection`) and close it |

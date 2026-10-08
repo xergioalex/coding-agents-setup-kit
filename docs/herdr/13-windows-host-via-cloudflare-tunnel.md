@@ -11,7 +11,7 @@ and the hub's Herdr shows this machine as a saved machine next to Local.
 phone (Termius) ─┐
                  ├─► Cloudflare One client ─► Gateway: Allow (your email, :22) ─► tunnel on Windows ─► cloudflared
 hub (ssh/herdr) ─┘                                                                                     │
-                                                       198.18.22.2 on a loopback adapter ─► sshd ─► herdr (native)
+                                                       198.18.100.2 on a loopback adapter ─► sshd ─► herdr (native)
 ```
 
 **Verification record.** Executed end to end on 2026-10-03: Windows 11 25H2
@@ -41,8 +41,8 @@ Nothing on this page is anybody's real value.
 
 | Placeholder | Meaning |
 | --- | --- |
-| `198.18.22.0/24` | the person's address block from page 11 |
-| `198.18.22.2` | **this** machine's address in it (`.1` is usually the hub) |
+| `198.18.100.0/24` | the person's address block from page 11 |
+| `198.18.100.2` | **this** machine's address in it (`.1` is usually the hub) |
 | `you` | the Windows account people log in as |
 | `my-windows` | the tunnel name |
 | `win` | the SSH alias on the hub (any name works) |
@@ -134,10 +134,10 @@ adapter**:
 
    ```powershell
    $a = (Get-NetAdapter | Where-Object InterfaceDescription -like '*KM-TEST*').Name
-   New-NetIPAddress -InterfaceAlias $a -IPAddress 198.18.22.2 -PrefixLength 32
+   New-NetIPAddress -InterfaceAlias $a -IPAddress 198.18.100.2 -PrefixLength 32
    ```
 
-Undo: `Remove-NetIPAddress -IPAddress 198.18.22.2 -Confirm:$false`, then remove
+Undo: `Remove-NetIPAddress -IPAddress 198.18.100.2 -Confirm:$false`, then remove
 the adapter in Device Manager. Do **not** fall back to the Wi-Fi/Ethernet
 address: it changes between networks and the default Split Tunnels exclude it.
 
@@ -153,7 +153,7 @@ PasswordAuthentication no
 KbdInteractiveAuthentication no
 PermitEmptyPasswords no
 AllowUsers you
-ListenAddress 198.18.22.2
+ListenAddress 198.18.100.2
 MaxAuthTries 3
 LoginGraceTime 30
 AllowAgentForwarding no
@@ -169,7 +169,7 @@ Copy-Item $c "$c.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"
 notepad $c
 & "$env:WINDIR\System32\OpenSSH\sshd.exe" -t      # no output = valid
 Restart-Service sshd
-Get-NetTCPConnection -State Listen -LocalPort 22 | Select-Object LocalAddress   # only 198.18.22.2
+Get-NetTCPConnection -State Listen -LocalPort 22 | Select-Object LocalAddress   # only 198.18.100.2
 ```
 
 - **`ListenAddress` on the tunnel address only** means sshd is unreachable from
@@ -197,7 +197,7 @@ Get-Service cloudflared                          # Running, Automatic
 ```
 
 Back in the dashboard: the connector shows **Healthy**. Then that tunnel →
-**CIDR routes → Add** → `198.18.22.2/32`, virtual network `default`. The
+**CIDR routes → Add** → `198.18.100.2/32`, virtual network `default`. The
 person's existing Allow already covers it because it lies inside their `/24`.
 
 Undo: delete the route and the tunnel in the dashboard, then
@@ -225,13 +225,13 @@ public line the same way.
 ```powershell
 $f = "$env:ProgramData\ssh\administrators_authorized_keys"
 if (Test-Path $f) { Copy-Item $f "$f.bak-$(Get-Date -Format yyyyMMdd-HHmmss)" }
-Add-Content -Path $f -Value 'from="198.18.22.2" ssh-ed25519 AAAA... mac-to-windows'
-Add-Content -Path $f -Value 'from="198.18.22.2" ssh-ed25519 AAAA... termius-phone'
+Add-Content -Path $f -Value 'from="198.18.100.2" ssh-ed25519 AAAA... mac-to-windows'
+Add-Content -Path $f -Value 'from="198.18.100.2" ssh-ed25519 AAAA... termius-phone'
 icacls.exe $f /inheritance:r /grant '*S-1-5-32-544:F' /grant '*S-1-5-18:F'
 Get-Content $f | ForEach-Object { ($_ -split ' ')[-1] }           # comments only
 ```
 
-- **`from="198.18.22.2"`**: connections through the tunnel reach sshd with the
+- **`from="198.18.100.2"`**: connections through the tunnel reach sshd with the
   machine's **own tunnel address as source** (verified in the sshd log), so
   this option makes a key usable only through the tunnel — even if port 22
   were ever opened by mistake.
@@ -241,7 +241,7 @@ Get-Content $f | ForEach-Object { ($_ -split ' ')[-1] }           # comments onl
 
 ## 8. Firewall: nothing to add
 
-`cloudflared` connects to `198.18.22.2:22` from the same machine, and Windows
+`cloudflared` connects to `198.18.100.2:22` from the same machine, and Windows
 Firewall did not filter that: with the built-in OpenSSH rule disabled and no
 other SSH rule, phone and hub both connected. Remove rules left by previous
 setups that open port 22 to some network (section 10), and add none.
@@ -253,7 +253,7 @@ after backing it up:
 
 ```sshconfig
 Host win
-  HostName 198.18.22.2
+  HostName 198.18.100.2
   User you
   IdentityFile ~/.ssh/windows_ed25519
   IdentitiesOnly yes
@@ -280,12 +280,24 @@ herdr machine add win --label "Windows"
 ```
 
 The fingerprint must equal the one `ssh` printed on the hub. If you already
-accepted a wrong one: `ssh-keygen -R 198.18.22.2` on the hub.
+accepted a wrong one: `ssh-keygen -R 198.18.100.2` on the hub.
 
 Herdr 0.9.1 on macOS attached to the native Windows Herdr server with
 `cmd.exe` as the SSH default shell — no `DefaultShell` change, no WSL. In the
 Windows server log a saved machine shows up as clients with
 `surface_active=false` (background) plus the attached UI.
+
+### Scripts over SSH
+
+With `cmd.exe` as the SSH default shell, a PowerShell one-liner sent from the
+hub breaks on quotes and pipes (`'Select-String' is not recognized…`), and
+`powershell -EncodedCommand <base64>` hits cmd's line-length limit for longer
+scripts (`The input line is too long`). Send the script on stdin instead —
+handy for read-only inspection from the hub:
+
+```bash
+ssh win "powershell -NoProfile -Command -" < script.ps1
+```
 
 ## 10. Coming from Tailscale: remove it cleanly
 
@@ -309,13 +321,13 @@ that only existed for the old path from `administrators_authorized_keys`.
 
 | Test | Expected |
 | --- | --- |
-| Termius → `198.18.22.2`, agent on | a Windows shell, no password |
+| Termius → `198.18.100.2`, agent on | a Windows shell, no password |
 | Termius, agent off | timeout |
 | hub `ssh win hostname` | the Windows host name |
 | hub `ssh nobody@win` or any user not in `AllowUsers` | refused (`Invalid user` in the sshd log) |
 | hub Herdr | **Windows** listed next to Local, its panes live |
-| `Get-NetTCPConnection -State Listen -LocalPort 22` | only `198.18.22.2` |
-| Windows rebooted | all of the above again (verified: the sshd log shows `Server listening on 198.18.22.2` right after boot) |
+| `Get-NetTCPConnection -State Listen -LocalPort 22` | only `198.18.100.2` |
+| Windows rebooted | all of the above again (verified: the sshd log shows `Server listening on 198.18.100.2` right after boot) |
 
 The sshd log is the fastest evidence (read-only):
 
@@ -333,6 +345,7 @@ Get-WinEvent -LogName 'OpenSSH/Operational' -MaxEvents 20 | Sort-Object TimeCrea
 | key authorized with `from=` but still refused | the source address sshd sees is not the one in `from=`; read it from an `Accepted`/`closed` line in the sshd log |
 | sshd does not start after a reboot | a `ListenAddress` names an address that is gone (old private network, adapter removed) |
 | `ssh win herdr --version` says herdr is not recognized | the SSH session does not see the user PATH; check `[Environment]::GetEnvironmentVariable('Path','User')` contains Herdr's release directory |
+| after a **Windows restart** the saved machine shows **attention**, while `ssh win` and Termius still work; the hub's client log says `matching Herdr is not ready on win; run herdr --remote win interactively…` | the Windows Herdr server started fresh and the hub's background connection cannot approve preparing it. On the hub, in a normal terminal: `herdr --remote win --session default`, approve the setup prompt, answer **No** to install/replace if both ends already run the same version (`herdr --version` here and `ssh win herdr --version`), detach (`ctrl+b`, `q`), then restart the hub's Herdr client. Expect this once after every Windows restart (observed with herdr 0.9.1) |
 | hub warns *connection is not using a post-quantum key exchange algorithm* | a warning, not an error: Windows' bundled OpenSSH 9.5 does not offer the post-quantum key exchange a recent macOS client asks for. The session is still encrypted, inside the tunnel's own encryption. It goes away with a newer OpenSSH on Windows |
 
 ## When something changes
